@@ -9,9 +9,6 @@ export const Experience = () => {
 
   return (
     <>
-      <div className="z-10 md:justify-center fixed bottom-4 left-4 right-4 flex gap-3 flex-wrap justify-stretch">
-        <TypingBox />
-      </div>
       <Avatar position={[0, -3, 5]} scale={2} />
       <Environment preset="apartment" />
       <mesh>
