@@ -14,41 +14,6 @@ const VISEME_MAP = {
   X: { id: "X", name: "REST", description: "Neutral/rest position", morphTarget: "viseme_sil" },
 };
 
-// Phoneme to Rhubarb viseme mapping
-const PHONEME_TO_VISEME = {
-  // Vowels
-  'a': 'D', 'e': 'C', 'i': 'C', 'o': 'E', 'u': 'F',
-  'A': 'D', 'E': 'C', 'I': 'C', 'O': 'E', 'U': 'F',
-
-  // Consonants
-  'm': 'A', 'b': 'A', 'p': 'A',
-  'M': 'A', 'B': 'A', 'P': 'A',
-
-  'f': 'G', 'v': 'G',
-  'F': 'G', 'V': 'G',
-
-  'l': 'H',
-  'L': 'H',
-
-  'w': 'F', 'q': 'F',
-  'W': 'F', 'Q': 'F',
-
-  // Default consonants
-  't': 'B', 'd': 'B', 'n': 'B', 's': 'B', 'z': 'B',
-  'T': 'B', 'D': 'B', 'N': 'B', 'S': 'B', 'Z': 'B',
-  'k': 'B', 'g': 'B', 'h': 'B', 'j': 'B', 'c': 'B',
-  'K': 'B', 'G': 'B', 'H': 'B', 'J': 'B', 'C': 'B',
-  'r': 'B', 'x': 'B', 'y': 'C',
-  'R': 'B', 'X': 'B', 'Y': 'C',
-
-  // Space/silence
-  ' ': 'X',
-  '.': 'X',
-  ',': 'X',
-  '!': 'X',
-  '?': 'X',
-};
-
 // Helper function to format visemes with detailed info (Rhubarb format)
 const formatVisemesDetailed = (visemes) => {
   return visemes.map(({ start, end, value }, index) => {
@@ -65,49 +30,18 @@ const formatVisemesDetailed = (visemes) => {
   });
 };
 
-// Generate Rhubarb-style viseme data from text
-const generateRhubarbVisemes = (text, durationMs) => {
-  const visemes = [];
-  const cleanText = text.replace(/[^a-zA-Z\s.,!?]/g, '');
-  const chars = cleanText.split('');
-
-  if (chars.length === 0) {
-    return [{ start: 0, end: durationMs / 1000, value: 'X' }];
-  }
-
-  const charDuration = durationMs / chars.length;
-  let currentTime = 0;
-  let lastViseme = null;
-
-  chars.forEach((char) => {
-    const viseme = PHONEME_TO_VISEME[char] || 'B';
-    const start = currentTime / 1000;
-    const end = (currentTime + charDuration) / 1000;
-
-    // Merge consecutive same visemes
-    if (lastViseme && lastViseme.value === viseme) {
-      lastViseme.end = end;
-    } else {
-      const newViseme = { start, end, value: viseme };
-      visemes.push(newViseme);
-      lastViseme = newViseme;
-    }
-
-    currentTime += charDuration;
-  });
-
-  // Add rest at the end
-  if (visemes.length > 0) {
-    const lastEnd = visemes[visemes.length - 1].end;
-    visemes.push({ start: lastEnd, end: lastEnd + 0.1, value: 'X' });
-  }
-
-  return visemes;
-};
-
 // Convert Rhubarb visemes to legacy format for backward compatibility [timeMs, visemeId]
 const convertToLegacyFormat = (rhubarbVisemes) => {
   return rhubarbVisemes.map(v => [v.start * 1000, v.value]);
+};
+
+const base64ToBlob = (base64, mimeType) => {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return new Blob([bytes], { type: mimeType });
 };
 
 export const useLipsyncStore = create((set, get) => ({
@@ -123,113 +57,56 @@ export const useLipsyncStore = create((set, get) => ({
     set({ loading: true });
 
     try {
-      // Check for Web Speech API support
-      if (!('speechSynthesis' in window)) {
-        throw new Error('Web Speech API not supported');
+      const response = await fetch("/api/rhubarb", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.text();
+        throw new Error(`Rhubarb API error: ${response.status} ${errorBody}`);
       }
 
-      // Create utterance
-      const utterance = new SpeechSynthesisUtterance(text);
+      const { rhubarbData, audioBase64, audioMime } = await response.json();
+      const audioBlob = base64ToBlob(audioBase64, audioMime || "audio/wav");
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audioPlayer = new Audio(audioUrl);
+      const legacyVisemes = convertToLegacyFormat(rhubarbData.mouthCues || []);
 
-      // Get available voices and prefer Indonesian or English
-      const voices = speechSynthesis.getVoices();
-      const preferredVoice = voices.find(v => v.lang.startsWith('id')) ||
-                            voices.find(v => v.lang.startsWith('en')) ||
-                            voices[0];
-      if (preferredVoice) {
-        utterance.voice = preferredVoice;
-      }
-
-      utterance.rate = 1.0;
-      utterance.pitch = 1.0;
-
-      // Estimate duration (roughly 100ms per character)
-      const estimatedDuration = Math.max(text.length * 100, 1000);
-
-      // Generate Rhubarb-style viseme data
-      const rhubarbVisemes = generateRhubarbVisemes(text, estimatedDuration);
-      const legacyVisemes = convertToLegacyFormat(rhubarbVisemes);
-
-      // Create a simple audio context for timing
-      let startTime = null;
-      let endTime = null;
-
-      // Create message object
       const message = {
         text,
         visemes: legacyVisemes,
-        rhubarbData: {
-          metadata: {
-            soundFile: "speech.wav",
-            duration: estimatedDuration / 1000,
-          },
-          mouthCues: rhubarbVisemes,
-        },
-        audioPlayer: {
-          currentTime: 0,
-          paused: false,
-          pause: () => {
-            speechSynthesis.cancel();
-          },
-        },
-        audioBlob: null,
-        audioUrl: null,
+        rhubarbData,
+        audioPlayer,
+        audioBlob,
+        audioUrl,
       };
 
-      // Handle speech events
-      utterance.onstart = () => {
-        startTime = Date.now();
-        // Update currentTime periodically
-        const updateTime = () => {
-          if (!message.audioPlayer.paused && startTime) {
-            message.audioPlayer.currentTime = (Date.now() - startTime) / 1000;
-            if (!speechSynthesis.speaking) return;
-            requestAnimationFrame(updateTime);
-          }
-        };
-        requestAnimationFrame(updateTime);
-      };
-
-      utterance.onend = () => {
-        endTime = Date.now();
-        const actualDuration = endTime - startTime;
-
-        // Recalculate visemes with actual duration
-        const actualRhubarbVisemes = generateRhubarbVisemes(text, actualDuration);
-        const actualLegacyVisemes = convertToLegacyFormat(actualRhubarbVisemes);
-
-        // Save output for download
+      audioPlayer.onended = () => {
         set({
           currentMessage: null,
           lastOutput: {
             text,
             timestamp: new Date().toISOString(),
-            visemes: actualLegacyVisemes,
-            rhubarbData: {
-              metadata: {
-                soundFile: "speech.wav",
-                duration: actualDuration / 1000,
-              },
-              mouthCues: actualRhubarbVisemes,
-            },
-            audioBlob: null,
-            audioUrl: null,
+            visemes: legacyVisemes,
+            rhubarbData,
+            audioBlob,
+            audioUrl,
           },
         });
       };
 
-      utterance.onerror = (event) => {
-        console.error('Speech error:', event);
+      audioPlayer.onerror = (event) => {
+        console.error("Audio error:", event);
         set({ loading: false, currentMessage: null });
       };
 
-      // Start speaking
       set({ loading: false, currentMessage: message });
-      speechSynthesis.speak(utterance);
-
+      await audioPlayer.play();
     } catch (error) {
       console.error('Speak error:', error);
-      set({ loading: false });
+      set({ loading: false, currentMessage: null });
     }
   },
 
@@ -238,7 +115,10 @@ export const useLipsyncStore = create((set, get) => ({
     const { currentMessage } = get();
     if (currentMessage?.audioPlayer) {
       currentMessage.audioPlayer.pause();
-      speechSynthesis.cancel();
+      currentMessage.audioPlayer.currentTime = 0;
+      if (currentMessage.audioUrl) {
+        URL.revokeObjectURL(currentMessage.audioUrl);
+      }
     }
     set({ currentMessage: null });
   },
@@ -247,7 +127,7 @@ export const useLipsyncStore = create((set, get) => ({
   downloadAudio: () => {
     const { lastOutput } = get();
     if (!lastOutput?.audioBlob) {
-      console.warn('Audio download not available with Web Speech API');
+      console.warn('Audio download not available');
       return;
     }
 
@@ -297,7 +177,7 @@ export const useLipsyncStore = create((set, get) => ({
       },
       mouthCues: formatVisemesDetailed(lastOutput.rhubarbData?.mouthCues || []),
       viseme_reference: VISEME_MAP,
-      note: "Generated using Web Speech API with Rhubarb viseme format",
+      note: "Generated with Azure TTS and Rhubarb lip-sync",
     };
 
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
