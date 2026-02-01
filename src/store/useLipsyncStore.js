@@ -59,8 +59,8 @@ export const useLipsyncStore = create((set, get) => ({
     set({ loading: true });
 
     try {
-      // Call the TTS API (server runs on port 3001)
-      const response = await fetch(`http://localhost:3001/api/tts?text=${encodeURIComponent(text)}`);
+      // Call the TTS API (server runs on port 3002)
+      const response = await fetch(`http://localhost:3002/api/tts?text=${encodeURIComponent(text)}`);
 
       if (!response.ok) {
         throw new Error("TTS request failed");
@@ -183,7 +183,7 @@ export const useLipsyncStore = create((set, get) => ({
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `lipsync_bundle_${Date.now()}.json`;
+    link.download = `azure_lipsync_bundle_${Date.now()}.json`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

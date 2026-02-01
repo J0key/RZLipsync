@@ -8,7 +8,7 @@ dotenv.config({ path: ".env.local" });
 const app = express();
 app.use(cors());
 
-const PORT = 3001;
+const PORT = 3002;
 
 app.get("/api/tts", async (req, res) => {
   const text = req.query.text;
