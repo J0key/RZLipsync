@@ -6,7 +6,10 @@ import { tmpdir } from "os";
 import path from "path";
 
 const ROOT_DIR = process.cwd();
-const RHUBARB_PATH = path.resolve(ROOT_DIR, "rhubarb.exe");
+const RHUBARB_DIR =
+  process.env.RHUBARB_DIR ||
+  path.resolve(ROOT_DIR, "Rhubarb-Lip-Sync-1.14.0-Windows");
+const RHUBARB_PATH = process.env.RHUBARB_PATH || path.join(RHUBARB_DIR, "rhubarb.exe");
 const PORT = process.env.PORT || 3001;
 
 const loadEnvFile = () => {
@@ -87,7 +90,10 @@ const synthesizeAzureTTS = async ({ text, voice }) => {
 const runRhubarb = async ({ wavPath, outputPath }) => {
   return new Promise((resolve, reject) => {
     const args = ["-f", "json", "-o", outputPath, wavPath];
-    const rhubarb = spawn(RHUBARB_PATH, args, { stdio: ["ignore", "ignore", "pipe"] });
+    const rhubarb = spawn(RHUBARB_PATH, args, {
+      stdio: ["ignore", "ignore", "pipe"],
+      cwd: RHUBARB_DIR,
+    });
     let stderr = "";
     rhubarb.stderr.on("data", (chunk) => {
       stderr += chunk.toString();
@@ -124,7 +130,7 @@ const handler = async (req, res) => {
     const body = await collectRequestBody(req);
     const payload = JSON.parse(body || "{}");
     const text = String(payload.text || "").trim();
-    const voice = payload.voice || process.env.AZURE_TTS_VOICE || "en-US-JennyNeural";
+    const voice = payload.voice || process.env.AZURE_TTS_VOICE || "ja-JP-NaokiNeural";
 
     if (!text) {
       jsonResponse(res, 400, { error: "Text is required" });
