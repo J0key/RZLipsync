@@ -1,29 +1,30 @@
 import { create } from "zustand";
 
 // Viseme mapping reference
+// Source: https://learn.microsoft.com/en-us/azure/ai-services/speech-service/how-to-speech-synthesis-viseme
 const VISEME_MAP = {
-  0: { id: "sil", name: "silence", description: "Diam / tidak ada suara", morphTarget: null },
-  1: { id: "PP", name: "viseme_PP", description: "Bunyi: p, b, m", morphTarget: "viseme_PP" },
-  2: { id: "FF", name: "viseme_FF", description: "Bunyi: f, v", morphTarget: "viseme_FF" },
-  3: { id: "TH", name: "viseme_TH", description: "Bunyi: th (seperti 'think')", morphTarget: "viseme_TH" },
-  4: { id: "DD", name: "viseme_DD", description: "Bunyi: t, d, n", morphTarget: "viseme_DD" },
-  5: { id: "kk", name: "viseme_kk", description: "Bunyi: k, g", morphTarget: "viseme_kk" },
-  6: { id: "CH", name: "viseme_CH", description: "Bunyi: ch, j, sh", morphTarget: "viseme_CH" },
-  7: { id: "SS", name: "viseme_SS", description: "Bunyi: s, z", morphTarget: "viseme_SS" },
-  8: { id: "nn", name: "viseme_nn", description: "Bunyi: n, l", morphTarget: "viseme_nn" },
-  9: { id: "RR", name: "viseme_RR", description: "Bunyi: r", morphTarget: "viseme_RR" },
-  10: { id: "aa", name: "viseme_aa", description: "Bunyi vokal: a (mulut terbuka lebar)", morphTarget: "viseme_aa" },
-  11: { id: "E", name: "viseme_E", description: "Bunyi vokal: e (seperti 'bed')", morphTarget: "viseme_E" },
-  12: { id: "I", name: "viseme_I", description: "Bunyi vokal: i (seperti 'see')", morphTarget: "viseme_I" },
-  13: { id: "O", name: "viseme_O", description: "Bunyi vokal: o (seperti 'go')", morphTarget: "viseme_O" },
-  14: { id: "U", name: "viseme_U", description: "Bunyi vokal: u (seperti 'too')", morphTarget: "viseme_U" },
-  15: { id: "aa2", name: "viseme_aa", description: "Bunyi vokal: aa lebar", morphTarget: "viseme_aa" },
-  16: { id: "O2", name: "viseme_O", description: "Bunyi vokal: oo", morphTarget: "viseme_O" },
-  17: { id: "U2", name: "viseme_U", description: "Bunyi vokal: ou", morphTarget: "viseme_U" },
-  18: { id: "E2", name: "viseme_E", description: "Bunyi vokal: ae", morphTarget: "viseme_E" },
-  19: { id: "I2", name: "viseme_I", description: "Bunyi vokal: ih", morphTarget: "viseme_I" },
-  20: { id: "O3", name: "viseme_O", description: "Bunyi vokal: oh", morphTarget: "viseme_O" },
-  21: { id: "U3", name: "viseme_U", description: "Bunyi vokal: uh", morphTarget: "viseme_U" },
+  0:  { id: "sil", name: "viseme_0",  description: "Silence",        morphTarget: null },
+  1:  { id: "v1",  name: "viseme_1",  description: "æ, ə, ʌ",        morphTarget: "viseme_1" },
+  2:  { id: "v2",  name: "viseme_2",  description: "ɑ",               morphTarget: "viseme_2" },
+  3:  { id: "v3",  name: "viseme_3",  description: "ɔ",               morphTarget: "viseme_3" },
+  4:  { id: "v4",  name: "viseme_4",  description: "ɛ, ʊ",            morphTarget: "viseme_4" },
+  5:  { id: "v5",  name: "viseme_5",  description: "ɝ",               morphTarget: "viseme_5" },
+  6:  { id: "v6",  name: "viseme_6",  description: "j, i, ɪ",         morphTarget: "viseme_6" },
+  7:  { id: "v7",  name: "viseme_7",  description: "w, u",            morphTarget: "viseme_7" },
+  8:  { id: "v8",  name: "viseme_8",  description: "o",               morphTarget: "viseme_8" },
+  9:  { id: "v9",  name: "viseme_9",  description: "aʊ",              morphTarget: "viseme_9" },
+  10: { id: "v10", name: "viseme_10", description: "ɔɪ",              morphTarget: "viseme_10" },
+  11: { id: "v11", name: "viseme_11", description: "aɪ",              morphTarget: "viseme_11" },
+  12: { id: "v12", name: "viseme_12", description: "h",               morphTarget: "viseme_12" },
+  13: { id: "v13", name: "viseme_13", description: "ɹ",               morphTarget: "viseme_13" },
+  14: { id: "v14", name: "viseme_14", description: "l",               morphTarget: "viseme_14" },
+  15: { id: "v15", name: "viseme_15", description: "s, z",            morphTarget: "viseme_15" },
+  16: { id: "v16", name: "viseme_16", description: "ʃ, tʃ, dʒ, ʒ",   morphTarget: "viseme_16" },
+  17: { id: "v17", name: "viseme_17", description: "ð",               morphTarget: "viseme_17" },
+  18: { id: "v18", name: "viseme_18", description: "f, v",            morphTarget: "viseme_18" },
+  19: { id: "v19", name: "viseme_19", description: "d, t, n, θ",      morphTarget: "viseme_19" },
+  20: { id: "v20", name: "viseme_20", description: "k, g, ŋ",         morphTarget: "viseme_20" },
+  21: { id: "v21", name: "viseme_21", description: "p, b, m",         morphTarget: "viseme_21" },
 };
 
 // Helper function to format visemes with detailed info
@@ -59,6 +60,9 @@ export const useLipsyncStore = create((set, get) => ({
     set({ loading: true });
 
     try {
+      // Catat waktu mulai sebelum request dikirim ke server
+      const ttpStart = performance.now();
+
       // Call the TTS API (server runs on port 3002)
       const response = await fetch(`http://localhost:3002/api/tts?text=${encodeURIComponent(text)}`);
 
@@ -70,9 +74,25 @@ export const useLipsyncStore = create((set, get) => ({
       const visemesHeader = response.headers.get("Visemes");
       const visemes = visemesHeader ? JSON.parse(visemesHeader) : [];
 
+      // Get word boundaries from header (bookmark offsets per word)
+      const wordBoundariesHeader = response.headers.get("Word-Boundaries");
+      const wordBoundaries = wordBoundariesHeader ? JSON.parse(wordBoundariesHeader) : [];
+
       // Get audio blob
       const audioBlob = await response.blob();
       const audioUrl = URL.createObjectURL(audioBlob);
+
+      // Catat waktu selesai setelah audio blob diterima
+      const ttpEnd = performance.now();
+      const ttp_ms = ttpEnd - ttpStart;
+
+      // Hitung LEN dari timestamp viseme terakhir (durasi audio dalam ms)
+      const len_ms = visemes.length > 0 ? visemes[visemes.length - 1][0] : 0;
+
+      // Hitung RTF
+      const rtf = len_ms > 0 ? ttp_ms / len_ms : null;
+
+      console.log(`[RTF] TTP: ${ttp_ms.toFixed(2)} ms | LEN: ${len_ms.toFixed(2)} ms | RTF: ${rtf !== null ? rtf.toFixed(4) : "N/A"}`);
 
       // Create audio player
       const audioPlayer = new Audio(audioUrl);
@@ -80,10 +100,16 @@ export const useLipsyncStore = create((set, get) => ({
       const outputData = {
         text,
         visemes,
+        wordBoundaries,
         audioPlayer,
         audioBlob,
         audioUrl,
         timestamp: new Date().toISOString(),
+        metrics: {
+          ttp_ms: parseFloat(ttp_ms.toFixed(2)),
+          len_ms: parseFloat(len_ms.toFixed(2)),
+          rtf: rtf !== null ? parseFloat(rtf.toFixed(4)) : null,
+        },
       };
 
       // Set the message with audio player
@@ -171,6 +197,7 @@ export const useLipsyncStore = create((set, get) => ({
       timestamp: lastOutput.timestamp,
       total_visemes: lastOutput.visemes.length,
       duration_ms: lastOutput.visemes.length > 0 ? lastOutput.visemes[lastOutput.visemes.length - 1][0] : 0,
+      rtf_metrics: lastOutput.metrics || null,
       visemes: formatVisemesDetailed(lastOutput.visemes),
       audio: {
         format: "wav",

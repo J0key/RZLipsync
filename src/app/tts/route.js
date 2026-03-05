@@ -7,8 +7,7 @@ export async function GET(req) {
     process.env["SPEECH_REGION"]
   );
 
-  const teacher = req.nextUrl.searchParams.get("Naoki");
-  speechConfig.speechSynthesisVoiceName = `ja-JP-NaokiNeural`;
+  speechConfig.speechSynthesisVoiceName = `en-US-GuyNeural`;
 
   const speechSynthesizer = new sdk.SpeechSynthesizer(speechConfig);
 

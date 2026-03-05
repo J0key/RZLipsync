@@ -23,20 +23,37 @@ app.get("/api/tts", async (req, res) => {
       process.env.AZURE_SPEECH_REGION
     );
 
-    // Use Japanese voice
-    speechConfig.speechSynthesisVoiceName = "ja-JP-NaokiNeural";
+    speechConfig.speechSynthesisVoiceName = "en-US-GuyNeural";
 
     const speechSynthesizer = new sdk.SpeechSynthesizer(speechConfig);
 
     const visemes = [];
+    const wordBoundaries = []; // { word, offsetMs }
+
     speechSynthesizer.visemeReceived = function (s, e) {
-      // audioOffset is in 100-nanosecond units, convert to milliseconds
       visemes.push([e.audioOffset / 10000, e.visemeId]);
     };
 
+    speechSynthesizer.bookmarkReached = function (s, e) {
+      wordBoundaries.push({ word: e.text, offsetMs: e.audioOffset / 10000 });
+    };
+
+    // Build SSML with a <bookmark> before each word so we can slice visemes per word
+    const words = text.trim().split(/\s+/);
+    const ssmlWords = words
+      .map((w) => {
+        // Strip punctuation for the bookmark mark so it matches analyzeText() keys
+        const mark = w.toLowerCase().replace(/[^a-z0-9'-]/g, "");
+        return `<bookmark mark="${mark}"/>${w}`;
+      })
+      .join(" ");
+    const ssml = `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="en-US">
+  <voice name="en-US-GuyNeural">${ssmlWords}</voice>
+</speak>`;
+
     const result = await new Promise((resolve, reject) => {
-      speechSynthesizer.speakTextAsync(
-        text,
+      speechSynthesizer.speakSsmlAsync(
+        ssml,
         (result) => {
           speechSynthesizer.close();
           if (result.reason === sdk.ResultReason.SynthesizingAudioCompleted) {
@@ -52,12 +69,13 @@ app.get("/api/tts", async (req, res) => {
       );
     });
 
-    // Set headers with visemes
+    console.log(`[TTS] visemes: ${visemes.length}, wordBoundaries: ${wordBoundaries.length}`);
+
     res.setHeader("Content-Type", "audio/wav");
     res.setHeader("Visemes", JSON.stringify(visemes));
-    res.setHeader("Access-Control-Expose-Headers", "Visemes");
+    res.setHeader("Word-Boundaries", JSON.stringify(wordBoundaries));
+    res.setHeader("Access-Control-Expose-Headers", "Visemes, Word-Boundaries");
 
-    // Send audio data
     res.send(Buffer.from(result.audioData));
 
   } catch (error) {
@@ -65,6 +83,7 @@ app.get("/api/tts", async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
 
 app.listen(PORT, () => {
   console.log(`TTS Server running on http://localhost:${PORT}`);
