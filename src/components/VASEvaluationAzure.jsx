@@ -256,25 +256,11 @@ export const VASEvaluationAzure = ({ onBack }) => {
               </div>
               <p className="text-gray-500 text-xs mt-3">
                 VAS = Corrected Visemes / Total Evaluable Visemes × 100
-                &nbsp;·&nbsp; Match: morphTarget equivalence (ID 15–21 = variant dari 10–14)
               </p>
               {!analysisResult.hasWordBoundaries && (
                 <p className="text-yellow-400/70 text-xs mt-1">
                   Perhatian: data word-boundary tidak tersedia — re-generate lipsync agar alignment per kata aktif.
                 </p>
-              )}
-              {analysisResult.hasWordBoundaries && Object.keys(analysisResult.wordDebug).length > 0 && (
-                <div className="mt-3 pt-3 border-t border-white/10">
-                  <p className="text-gray-400 text-xs font-semibold mb-1">Detected visemes per word:</p>
-                  {Object.entries(analysisResult.wordDebug).map(([word, windows]) => (
-                    <div key={word} className="text-xs font-mono text-gray-400 mb-0.5">
-                      <span className="text-white/70 mr-1">{word}:</span>
-                      {windows.map((w, i) => (
-                        <span key={i} className="mr-2">[{w.join(", ") || "∅"}]</span>
-                      ))}
-                    </div>
-                  ))}
-                </div>
               )}
             </div>
 
