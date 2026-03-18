@@ -68,7 +68,7 @@ export const useLipsyncStore = create((set, get) => ({
         throw new Error(`Rhubarb API error: ${response.status} ${errorBody}`);
       }
 
-      const { rhubarbData, audioBase64, audioMime } = await response.json();
+      const { rhubarbData, audioBase64, audioMime, rtf, ttp, audioDuration } = await response.json();
       const audioBlob = base64ToBlob(audioBase64, audioMime || "audio/wav");
       const audioUrl = URL.createObjectURL(audioBlob);
       const audioPlayer = new Audio(audioUrl);
@@ -93,6 +93,9 @@ export const useLipsyncStore = create((set, get) => ({
             rhubarbData,
             audioBlob,
             audioUrl,
+            rtf,
+            ttp,
+            audioDuration,
           },
         });
       };

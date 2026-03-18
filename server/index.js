@@ -87,9 +87,25 @@ const synthesizeAzureTTS = async ({ text, voice }) => {
   return Buffer.from(arrayBuffer);
 };
 
+const getWavDuration = (wavBuffer) => {
+  // WAV header: bytes 24-27 = sample rate, bytes 34-35 = bits per sample,
+  // bytes 22-23 = num channels, bytes 40-43 = data chunk size
+  try {
+    const sampleRate = wavBuffer.readUInt32LE(24);
+    const numChannels = wavBuffer.readUInt16LE(22);
+    const bitsPerSample = wavBuffer.readUInt16LE(34);
+    const dataSize = wavBuffer.readUInt32LE(40);
+    const byteRate = (sampleRate * numChannels * bitsPerSample) / 8;
+    return dataSize / byteRate;
+  } catch {
+    return null;
+  }
+};
+
 const runRhubarb = async ({ wavPath, outputPath }) => {
   return new Promise((resolve, reject) => {
     const args = ["-f", "json", "-o", outputPath, wavPath];
+    const startTime = Date.now();
     const rhubarb = spawn(RHUBARB_PATH, args, {
       stdio: ["ignore", "ignore", "pipe"],
       cwd: RHUBARB_DIR,
@@ -104,7 +120,8 @@ const runRhubarb = async ({ wavPath, outputPath }) => {
         reject(new Error(`rhubarb.exe failed (${code}): ${stderr}`));
         return;
       }
-      resolve();
+      const ttp = (Date.now() - startTime) / 1000; // seconds
+      resolve({ ttp });
     });
   });
 };
@@ -130,7 +147,7 @@ const handler = async (req, res) => {
     const body = await collectRequestBody(req);
     const payload = JSON.parse(body || "{}");
     const text = String(payload.text || "").trim();
-    const voice = payload.voice || process.env.AZURE_TTS_VOICE || "ja-JP-NaokiNeural";
+    const voice = "en-US-GuyNeural";
 
     if (!text) {
       jsonResponse(res, 400, { error: "Text is required" });
@@ -147,14 +164,20 @@ const handler = async (req, res) => {
     const outputPath = path.join(tmpdir(), `rhubarb-${stamp}.json`);
 
     await writeFile(wavPath, wavBuffer);
-    await runRhubarb({ wavPath, outputPath });
+    const { ttp } = await runRhubarb({ wavPath, outputPath });
     const rhubarbJson = await readFile(outputPath, "utf8");
     const rhubarbData = JSON.parse(rhubarbJson);
+
+    const audioDuration = getWavDuration(wavBuffer);
+    const rtf = audioDuration ? parseFloat((ttp / audioDuration).toFixed(4)) : null;
 
     jsonResponse(res, 200, {
       rhubarbData,
       audioBase64: wavBuffer.toString("base64"),
       audioMime: "audio/wav",
+      rtf,
+      ttp: parseFloat(ttp.toFixed(4)),
+      audioDuration: audioDuration ? parseFloat(audioDuration.toFixed(4)) : null,
     });
 
     await unlink(wavPath);
