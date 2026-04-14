@@ -1,6 +1,6 @@
 # Azure Neural Lipsync Avatar
 
-Aplikasi avatar 3D interaktif berbasis web yang menggunakan **Azure Cognitive Services Speech SDK** untuk Text-to-Speech (TTS) dengan animasi lipsync real-time. Proyek ini merupakan bagian dari Tugas Akhir yang membandingkan performa library Rhubarb dan Azure untuk sistem lipsync pada avatar interaktif.
+Aplikasi avatar 3D interaktif berbasis web yang menggunakan **Azure Cognitive Services Speech SDK** untuk Text-to-Speech (TTS) dengan animasi lipsync real-time. 
 
 ## Deskripsi
 
