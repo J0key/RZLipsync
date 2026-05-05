@@ -4,6 +4,7 @@ import { readFile, writeFile, unlink } from "fs/promises";
 import { existsSync, readFileSync } from "fs";
 import { tmpdir } from "os";
 import path from "path";
+import { performance } from "perf_hooks";
 
 const ROOT_DIR = process.cwd();
 const RHUBARB_DIR =
@@ -87,25 +88,9 @@ const synthesizeAzureTTS = async ({ text, voice }) => {
   return Buffer.from(arrayBuffer);
 };
 
-const getWavDuration = (wavBuffer) => {
-  // WAV header: bytes 24-27 = sample rate, bytes 34-35 = bits per sample,
-  // bytes 22-23 = num channels, bytes 40-43 = data chunk size
-  try {
-    const sampleRate = wavBuffer.readUInt32LE(24);
-    const numChannels = wavBuffer.readUInt16LE(22);
-    const bitsPerSample = wavBuffer.readUInt16LE(34);
-    const dataSize = wavBuffer.readUInt32LE(40);
-    const byteRate = (sampleRate * numChannels * bitsPerSample) / 8;
-    return dataSize / byteRate;
-  } catch {
-    return null;
-  }
-};
-
 const runRhubarb = async ({ wavPath, outputPath }) => {
   return new Promise((resolve, reject) => {
     const args = ["-f", "json", "-o", outputPath, wavPath];
-    const startTime = Date.now();
     const rhubarb = spawn(RHUBARB_PATH, args, {
       stdio: ["ignore", "ignore", "pipe"],
       cwd: RHUBARB_DIR,
@@ -120,8 +105,7 @@ const runRhubarb = async ({ wavPath, outputPath }) => {
         reject(new Error(`rhubarb.exe failed (${code}): ${stderr}`));
         return;
       }
-      const ttp = (Date.now() - startTime) / 1000; // seconds
-      resolve({ ttp });
+      resolve();
     });
   });
 };
@@ -158,26 +142,24 @@ const handler = async (req, res) => {
       return;
     }
 
+    const ttsStart = performance.now();
     const wavBuffer = await synthesizeAzureTTS({ text, voice });
+    const ttsProcessingTime = (performance.now() - ttsStart) / 1000;
     const stamp = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
     const wavPath = path.join(tmpdir(), `rhubarb-${stamp}.wav`);
     const outputPath = path.join(tmpdir(), `rhubarb-${stamp}.json`);
 
     await writeFile(wavPath, wavBuffer);
-    const { ttp } = await runRhubarb({ wavPath, outputPath });
+    await runRhubarb({ wavPath, outputPath });
     const rhubarbJson = await readFile(outputPath, "utf8");
     const rhubarbData = JSON.parse(rhubarbJson);
-
-    const audioDuration = getWavDuration(wavBuffer);
-    const rtf = audioDuration ? parseFloat((ttp / audioDuration).toFixed(4)) : null;
 
     jsonResponse(res, 200, {
       rhubarbData,
       audioBase64: wavBuffer.toString("base64"),
       audioMime: "audio/wav",
-      rtf,
-      ttp: parseFloat(ttp.toFixed(4)),
-      audioDuration: audioDuration ? parseFloat(audioDuration.toFixed(4)) : null,
+      processingTime: ttsProcessingTime,
+      processingTimeSource: "Azure TTS request",
     });
 
     await unlink(wavPath);

@@ -67,32 +67,6 @@ export const TypingBox = () => {
         </div>
       )}
 
-      {/* RTF Metrics */}
-      {lastOutput && !loading && lastOutput.rtf != null && (
-        <div className="border-t border-white/20 mt-4 pt-4">
-          <p className="text-gray-600 text-xs mb-2 font-medium">RTF Metrics</p>
-          <div className="grid grid-cols-3 gap-2 text-center">
-            <div className="bg-black/20 rounded-xl py-2 px-3">
-              <p className="text-white/50 text-[10px] uppercase tracking-wide">TTP (s)</p>
-              <p className="text-white text-sm font-bold">{lastOutput.ttp?.toFixed(3)}</p>
-            </div>
-            <div className="bg-black/20 rounded-xl py-2 px-3">
-              <p className="text-white/50 text-[10px] uppercase tracking-wide">LEN (s)</p>
-              <p className="text-white text-sm font-bold">{lastOutput.audioDuration?.toFixed(3)}</p>
-            </div>
-            <div className={`rounded-xl py-2 px-3 ${lastOutput.rtf <= 1 ? "bg-black/20" : "bg-red-500"}`}>
-              <p className="text-white/50 text-[10px] uppercase tracking-wide">RTF</p>
-              <p className="text-white text-sm font-bold">
-                {lastOutput.rtf.toFixed(4)}
-              </p>
-            </div>
-          </div>
-          <p className="text-gray-500 text-[10px] mt-1">
-            RTF &lt; 1 = real-time capable
-          </p>
-        </div>
-      )}
-
       {/* Download Section */}
       {lastOutput && !loading && (
         <div className="border-t border-white/20 mt-4 pt-4">

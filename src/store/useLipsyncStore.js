@@ -35,19 +35,10 @@ const convertToLegacyFormat = (rhubarbVisemes) => {
   return rhubarbVisemes.map(v => [v.start * 1000, v.value]);
 };
 
-const base64ToBlob = (base64, mimeType) => {
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i += 1) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-  return new Blob([bytes], { type: mimeType });
-};
-
 export const useLipsyncStore = create((set, get) => ({
   // State
   loading: false,
-  currentMessage: null, // { text, visemes, rhubarbData, audioPlayer, audioBlob, audioUrl }
+  currentMessage: null, // { text, visemes, rhubarbData, audioPlayer, audioBlob, audioUrl, processingTime, processingTimeSource }
   lastOutput: null,
 
   // Speak function - generates audio and visemes
@@ -68,36 +59,39 @@ export const useLipsyncStore = create((set, get) => ({
         throw new Error(`Rhubarb API error: ${response.status} ${errorBody}`);
       }
 
-      const { rhubarbData, audioBase64, audioMime, rtf, ttp, audioDuration } = await response.json();
-      const audioBlob = base64ToBlob(audioBase64, audioMime || "audio/wav");
-      const audioUrl = URL.createObjectURL(audioBlob);
-      const audioPlayer = new Audio(audioUrl);
+      const {
+        rhubarbData,
+        audioBase64,
+        audioMime,
+        processingTime,
+      } = await response.json();
+
       const legacyVisemes = convertToLegacyFormat(rhubarbData.mouthCues || []);
 
-      const message = {
+      const audioBlob = await (await fetch(`data:${audioMime};base64,${audioBase64}`)).blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+
+      // Create audio player
+      const audioPlayer = new Audio(audioUrl);
+
+      const output = {
         text,
         visemes: legacyVisemes,
         rhubarbData,
-        audioPlayer,
         audioBlob,
         audioUrl,
+         processingTime,
+        timestamp: new Date().toISOString(),
       };
 
+      const message = {
+        ...output,
+        audioPlayer,
+      };
+
+      // Clean up when audio ends (but keep lastOutput for download)
       audioPlayer.onended = () => {
-        set({
-          currentMessage: null,
-          lastOutput: {
-            text,
-            timestamp: new Date().toISOString(),
-            visemes: legacyVisemes,
-            rhubarbData,
-            audioBlob,
-            audioUrl,
-            rtf,
-            ttp,
-            audioDuration,
-          },
-        });
+        set({ currentMessage: null });
       };
 
       audioPlayer.onerror = (event) => {
@@ -105,8 +99,8 @@ export const useLipsyncStore = create((set, get) => ({
         set({ loading: false, currentMessage: null });
       };
 
-      set({ loading: false, currentMessage: message });
-      await audioPlayer.play();
+      set({ loading: false, currentMessage: message, lastOutput: output });
+      audioPlayer.play();
     } catch (error) {
       console.error('Speak error:', error);
       set({ loading: false, currentMessage: null });
@@ -119,18 +113,14 @@ export const useLipsyncStore = create((set, get) => ({
     if (currentMessage?.audioPlayer) {
       currentMessage.audioPlayer.pause();
       currentMessage.audioPlayer.currentTime = 0;
-      if (currentMessage.audioUrl) {
-        URL.revokeObjectURL(currentMessage.audioUrl);
-      }
     }
     set({ currentMessage: null });
   },
 
-  // Download audio file (not available with Web Speech API)
+  // Download audio file 
   downloadAudio: () => {
     const { lastOutput } = get();
     if (!lastOutput?.audioBlob) {
-      console.warn('Audio download not available');
       return;
     }
 
@@ -169,6 +159,13 @@ export const useLipsyncStore = create((set, get) => ({
     const { lastOutput } = get();
     if (!lastOutput) return;
 
+    // Convert audio blob to base64
+    const arrayBuffer = await lastOutput.audioBlob.arrayBuffer();
+    const base64Audio = btoa(
+      new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), "")
+    );
+
+    // rhubarb type
     const data = {
       text: lastOutput.text,
       timestamp: lastOutput.timestamp,
@@ -180,9 +177,9 @@ export const useLipsyncStore = create((set, get) => ({
       },
       mouthCues: formatVisemesDetailed(lastOutput.rhubarbData?.mouthCues || []),
       viseme_reference: VISEME_MAP,
-      note: "Generated with Azure TTS and Rhubarb lip-sync",
     };
 
+    // generate header
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
