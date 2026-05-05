@@ -24,6 +24,7 @@ app.get("/api/tts", async (req, res) => {
     );
 
     speechConfig.speechSynthesisVoiceName = "en-US-GuyNeural";
+    speechConfig.speechSynthesisOutputFormat = sdk.SpeechSynthesisOutputFormat.Riff16Khz16BitMonoPcm;
 
     const speechSynthesizer = new sdk.SpeechSynthesizer(speechConfig);
 

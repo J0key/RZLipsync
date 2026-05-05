@@ -58,11 +58,9 @@ export const useLipsyncStore = create((set, get) => ({
     if (!text.trim()) return;
 
     set({ loading: true });
+    const startedAt = performance.now();
 
     try {
-      // Catat waktu mulai sebelum request dikirim ke server
-      const ttpStart = performance.now();
-
       // Call the TTS API (server runs on port 3002)
       const response = await fetch(`http://localhost:3002/api/tts?text=${encodeURIComponent(text)}`);
 
@@ -80,19 +78,8 @@ export const useLipsyncStore = create((set, get) => ({
 
       // Get audio blob
       const audioBlob = await response.blob();
+      const processingTime = (performance.now() - startedAt) / 1000;
       const audioUrl = URL.createObjectURL(audioBlob);
-
-      // Catat waktu selesai setelah audio blob diterima
-      const ttpEnd = performance.now();
-      const ttp_ms = ttpEnd - ttpStart;
-
-      // Hitung LEN dari timestamp viseme terakhir (durasi audio dalam ms)
-      const len_ms = visemes.length > 0 ? visemes[visemes.length - 1][0] : 0;
-
-      // Hitung RTF
-      const rtf = len_ms > 0 ? ttp_ms / len_ms : null;
-
-      console.log(`[RTF] TTP: ${ttp_ms.toFixed(2)} ms | LEN: ${len_ms.toFixed(2)} ms | RTF: ${rtf !== null ? rtf.toFixed(4) : "N/A"}`);
 
       // Create audio player
       const audioPlayer = new Audio(audioUrl);
@@ -104,12 +91,8 @@ export const useLipsyncStore = create((set, get) => ({
         audioPlayer,
         audioBlob,
         audioUrl,
+        processingTime,
         timestamp: new Date().toISOString(),
-        metrics: {
-          ttp_ms: parseFloat(ttp_ms.toFixed(2)),
-          len_ms: parseFloat(len_ms.toFixed(2)),
-          rtf: rtf !== null ? parseFloat(rtf.toFixed(4)) : null,
-        },
       };
 
       // Set the message with audio player
@@ -165,7 +148,6 @@ export const useLipsyncStore = create((set, get) => ({
       text: lastOutput.text,
       timestamp: lastOutput.timestamp,
       total_visemes: lastOutput.visemes.length,
-      duration_ms: lastOutput.visemes.length > 0 ? lastOutput.visemes[lastOutput.visemes.length - 1][0] : 0,
       visemes: formatVisemesDetailed(lastOutput.visemes),
       viseme_reference: VISEME_MAP,
     };
@@ -196,8 +178,6 @@ export const useLipsyncStore = create((set, get) => ({
       text: lastOutput.text,
       timestamp: lastOutput.timestamp,
       total_visemes: lastOutput.visemes.length,
-      duration_ms: lastOutput.visemes.length > 0 ? lastOutput.visemes[lastOutput.visemes.length - 1][0] : 0,
-      rtf_metrics: lastOutput.metrics || null,
       visemes: formatVisemesDetailed(lastOutput.visemes),
       audio: {
         format: "wav",

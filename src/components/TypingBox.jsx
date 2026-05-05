@@ -69,32 +69,6 @@ export const TypingBox = () => {
         </div>
       )}
 
-      {/* RTF Metrics */}
-      {lastOutput?.metrics && !loading && (
-        <div className="border-t border-white/20 mt-4 pt-4">
-          <p className="text-gray-600 text-xs mb-2 font-medium">RTF Metrics:</p>
-          <div className="grid grid-cols-3 gap-2 text-center">
-            <div className="bg-black/20 rounded-xl py-2 px-3">
-              <p className="text-white/50 text-[10px] uppercase tracking-wide">TTP</p>
-              <p className="text-white text-sm font-semibold">{lastOutput.metrics.ttp_ms} ms</p>
-            </div>
-            <div className="bg-black/20 rounded-xl py-2 px-3">
-              <p className="text-white/50 text-[10px] uppercase tracking-wide">LEN</p>
-              <p className="text-white text-sm font-semibold">{lastOutput.metrics.len_ms} ms</p>
-            </div>
-            <div className={`rounded-xl py-2 px-3 ${lastOutput.metrics.rtf !== null && lastOutput.metrics.rtf < 1 ? "bg-green-500/30" : "bg-red-500/30"}`}>
-              <p className="text-white/50 text-[10px] uppercase tracking-wide">RTF</p>
-              <p className="text-white text-sm font-semibold">
-                {lastOutput.metrics.rtf !== null ? lastOutput.metrics.rtf : "N/A"}
-              </p>
-            </div>
-          </div>
-          <p className="text-white/40 text-[10px] mt-1 text-center">
-            {lastOutput.metrics.rtf !== null && lastOutput.metrics.rtf < 1 ? "Real-time capable (RTF < 1)" : "Slower than real-time (RTF ≥ 1)"}
-          </p>
-        </div>
-      )}
-
       {/* Download Section */}
       {lastOutput && !loading && (
         <div className="border-t border-white/20 mt-4 pt-4">
