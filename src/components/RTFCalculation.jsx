@@ -8,6 +8,8 @@ export const AUDIO_FORMAT = {
 
 const DEFAULT_SILENCE_THRESHOLD = 0.01;
 const DEFAULT_FRAME_MS = 10;
+const WAV_FORMAT_PCM = 1;
+const DEFAULT_DURATION_MODE = "trimmed";
 
 const getAudioContext = () => {
   const AudioContextClass = window.AudioContext || window.webkitAudioContext;
@@ -34,6 +36,151 @@ const getFrameRms = (audioBuffer, startSample, endSample) => {
   }
 
   return sampleCount > 0 ? Math.sqrt(sumSquares / sampleCount) : 0;
+};
+
+const readChunkId = (view, offset) =>
+  String.fromCharCode(
+    view.getUint8(offset),
+    view.getUint8(offset + 1),
+    view.getUint8(offset + 2),
+    view.getUint8(offset + 3)
+  );
+
+const findWavChunks = (arrayBuffer) => {
+  const view = new DataView(arrayBuffer);
+
+  if (view.byteLength < 12 || readChunkId(view, 0) !== "RIFF" || readChunkId(view, 8) !== "WAVE") {
+    throw new Error("Audio is not a valid RIFF/WAVE file.");
+  }
+
+  let fmtChunk = null;
+  let dataChunk = null;
+  let offset = 12;
+
+  while (offset + 8 <= view.byteLength) {
+    const id = readChunkId(view, offset);
+    const size = view.getUint32(offset + 4, true);
+    const dataOffset = offset + 8;
+
+    if (dataOffset + size > view.byteLength) {
+      throw new Error(`Invalid WAV chunk size for "${id}".`);
+    }
+
+    if (id === "fmt ") {
+      fmtChunk = { offset: dataOffset, size };
+    } else if (id === "data") {
+      dataChunk = { offset: dataOffset, size };
+    }
+
+    offset = dataOffset + size + (size % 2);
+  }
+
+  if (!fmtChunk || !dataChunk) {
+    throw new Error("WAV file is missing required fmt or data chunk.");
+  }
+
+  return { view, fmtChunk, dataChunk };
+};
+
+const parsePcmWav = (arrayBuffer) => {
+  const { view, fmtChunk, dataChunk } = findWavChunks(arrayBuffer);
+
+  if (fmtChunk.size < 16) {
+    throw new Error("WAV fmt chunk is too small.");
+  }
+
+  const audioFormat = view.getUint16(fmtChunk.offset, true);
+  const channels = view.getUint16(fmtChunk.offset + 2, true);
+  const sampleRate = view.getUint32(fmtChunk.offset + 4, true);
+  const byteRate = view.getUint32(fmtChunk.offset + 8, true);
+  const blockAlign = view.getUint16(fmtChunk.offset + 12, true);
+  const bitsPerSample = view.getUint16(fmtChunk.offset + 14, true);
+
+  if (audioFormat !== WAV_FORMAT_PCM) {
+    throw new Error(`Unsupported WAV format code ${audioFormat}. Expected PCM.`);
+  }
+
+  if (bitsPerSample !== 16) {
+    throw new Error(`Unsupported PCM bit depth ${bitsPerSample}. Expected 16-bit.`);
+  }
+
+  if (channels <= 0 || sampleRate <= 0 || blockAlign <= 0 || byteRate <= 0) {
+    throw new Error("Invalid WAV format metadata.");
+  }
+
+  const totalFrames = Math.floor(dataChunk.size / blockAlign);
+  const decodedDuration = totalFrames / sampleRate;
+
+  return {
+    view,
+    channels,
+    sampleRate,
+    blockAlign,
+    dataOffset: dataChunk.offset,
+    totalFrames,
+    decodedDuration,
+  };
+};
+
+const getPcmFrameRms = (wav, startFrame, endFrame) => {
+  let sumSquares = 0;
+  let sampleCount = 0;
+
+  for (let frame = startFrame; frame < endFrame; frame++) {
+    const frameOffset = wav.dataOffset + frame * wav.blockAlign;
+
+    for (let channel = 0; channel < wav.channels; channel++) {
+      const sampleOffset = frameOffset + channel * 2;
+      const value = wav.view.getInt16(sampleOffset, true) / 32768;
+      sumSquares += value * value;
+      sampleCount++;
+    }
+  }
+
+  return sampleCount > 0 ? Math.sqrt(sumSquares / sampleCount) : 0;
+};
+
+export const getPcmWavDurationWithoutSilence = (
+  arrayBuffer,
+  {
+    silenceThreshold = DEFAULT_SILENCE_THRESHOLD,
+    frameMs = DEFAULT_FRAME_MS,
+  } = {}
+) => {
+  const wav = parsePcmWav(arrayBuffer);
+  const frameSize = Math.max(1, Math.floor((wav.sampleRate * frameMs) / 1000));
+  let firstAudibleFrame = null;
+  let lastAudibleFrame = null;
+
+  for (let start = 0; start < wav.totalFrames; start += frameSize) {
+    const end = Math.min(start + frameSize, wav.totalFrames);
+    const rms = getPcmFrameRms(wav, start, end);
+
+    if (rms > silenceThreshold) {
+      firstAudibleFrame = start;
+      break;
+    }
+  }
+
+  for (let end = wav.totalFrames; end > 0; end -= frameSize) {
+    const start = Math.max(0, end - frameSize);
+    const rms = getPcmFrameRms(wav, start, end);
+
+    if (rms > silenceThreshold) {
+      lastAudibleFrame = end;
+      break;
+    }
+  }
+
+  return {
+    duration:
+      firstAudibleFrame === null || lastAudibleFrame === null
+        ? 0
+        : (lastAudibleFrame - firstAudibleFrame) / wav.sampleRate,
+    decodedDuration: wav.decodedDuration,
+    sampleRate: wav.sampleRate,
+    channels: wav.channels,
+  };
 };
 
 export const getDecodedDurationWithoutSilence = (
@@ -78,22 +225,21 @@ export const getDecodedDurationWithoutSilence = (
 export const calculateRTFFromBlob = async (
   audioBlob,
   processingTime,
-  options = {}
+  { durationMode = DEFAULT_DURATION_MODE, ...trimOptions } = {}
 ) => {
   if (!audioBlob) {
     throw new Error("Audio blob is required.");
   }
 
   const arrayBuffer = await audioBlob.arrayBuffer();
-  const audioContext = getAudioContext();
+  let audioContext = null;
 
   try {
-    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-    const decodedDuration = audioBuffer.duration;
-    const duration = getDecodedDurationWithoutSilence(audioBuffer, options);
+    const wav = getPcmWavDurationWithoutSilence(arrayBuffer, trimOptions);
+    const duration = durationMode === "trimmed" ? wav.duration : wav.decodedDuration;
 
     if (duration <= 0) {
-      throw new Error("Decoded audio duration is 0 after trimming silence.");
+      throw new Error("Decoded audio duration is 0.");
     }
 
     const rtf = processingTime / duration;
@@ -101,14 +247,44 @@ export const calculateRTFFromBlob = async (
     return {
       rtf,
       duration,
+      trimmedDuration: wav.duration,
+      decodedDuration: wav.decodedDuration,
+      trailingSilence: Math.max(0, wav.decodedDuration - wav.duration),
+      processingTime,
+      sampleRate: wav.sampleRate,
+      channels: wav.channels,
+      durationMode,
+      durationSource: "Exact PCM WAV sample count",
+      format: AUDIO_FORMAT,
+    };
+  } catch (wavError) {
+    audioContext = getAudioContext();
+    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer.slice(0));
+    const decodedDuration = audioBuffer.duration;
+    const trimmedDuration = getDecodedDurationWithoutSilence(audioBuffer, trimOptions);
+    const duration = durationMode === "trimmed" ? trimmedDuration : decodedDuration;
+
+    if (duration <= 0) {
+      throw new Error("Decoded audio duration is 0.");
+    }
+
+    const rtf = processingTime / duration;
+
+    return {
+      rtf,
+      duration,
+      trimmedDuration,
       decodedDuration,
+      trailingSilence: Math.max(0, decodedDuration - trimmedDuration),
       processingTime,
       sampleRate: audioBuffer.sampleRate,
       channels: audioBuffer.numberOfChannels,
+      durationMode,
+      durationSource: `AudioContext.decodeAudioData fallback (${wavError.message})`,
       format: AUDIO_FORMAT,
     };
   } finally {
-    await audioContext.close();
+    await audioContext?.close();
   }
 };
 
@@ -225,11 +401,11 @@ export const RTFCalculation = ({
                   <div className="text-white text-2xl font-semibold">{result.processingTime.toFixed(3)}s</div>
                 </div>
                 <div className="bg-black/20 rounded-xl p-4 border border-white/10">
-                  <div className="text-gray-500 text-xs mb-1">Decoded Duration</div>
+                  <div className="text-gray-500 text-xs mb-1">Full WAV Duration</div>
                   <div className="text-white text-2xl font-semibold">{result.decodedDuration.toFixed(3)}s</div>
                 </div>
                 <div className="bg-black/20 rounded-xl p-4 border border-white/10">
-                  <div className="text-gray-500 text-xs mb-1">Trimmed Duration</div>
+                  <div className="text-gray-500 text-xs mb-1">RTF Duration</div>
                   <div className="text-white text-2xl font-semibold">{result.duration.toFixed(3)}s</div>
                 </div>
               </div>
@@ -247,6 +423,22 @@ export const RTFCalculation = ({
                 <div>
                   <div className="text-gray-500 mb-1">Decoded Channels</div>
                   <div className="text-gray-300">{result.channels}</div>
+                </div>
+                <div>
+                  <div className="text-gray-500 mb-1">Trimmed Audible Duration</div>
+                  <div className="text-gray-300">{result.trimmedDuration.toFixed(3)}s</div>
+                </div>
+                <div>
+                  <div className="text-gray-500 mb-1">Duration Mode</div>
+                  <div className="text-gray-300">{result.durationMode}</div>
+                </div>
+                <div>
+                  <div className="text-gray-500 mb-1">Trailing Silence</div>
+                  <div className="text-gray-300">{result.trailingSilence.toFixed(3)}s</div>
+                </div>
+                <div className="sm:col-span-2">
+                  <div className="text-gray-500 mb-1">Duration Source</div>
+                  <div className="text-gray-300">{result.durationSource}</div>
                 </div>
               </div>
 

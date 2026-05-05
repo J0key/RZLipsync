@@ -3,28 +3,28 @@ import { create } from "zustand";
 // Viseme mapping reference
 // Source: https://learn.microsoft.com/en-us/azure/ai-services/speech-service/how-to-speech-synthesis-viseme
 const VISEME_MAP = {
-  0:  { id: "sil", name: "viseme_0",  description: "Silence",        morphTarget: null },
-  1:  { id: "v1",  name: "viseme_1",  description: "æ, ə, ʌ",        morphTarget: "viseme_1" },
-  2:  { id: "v2",  name: "viseme_2",  description: "ɑ",               morphTarget: "viseme_2" },
-  3:  { id: "v3",  name: "viseme_3",  description: "ɔ",               morphTarget: "viseme_3" },
-  4:  { id: "v4",  name: "viseme_4",  description: "ɛ, ʊ",            morphTarget: "viseme_4" },
-  5:  { id: "v5",  name: "viseme_5",  description: "ɝ",               morphTarget: "viseme_5" },
-  6:  { id: "v6",  name: "viseme_6",  description: "j, i, ɪ",         morphTarget: "viseme_6" },
-  7:  { id: "v7",  name: "viseme_7",  description: "w, u",            morphTarget: "viseme_7" },
-  8:  { id: "v8",  name: "viseme_8",  description: "o",               morphTarget: "viseme_8" },
-  9:  { id: "v9",  name: "viseme_9",  description: "aʊ",              morphTarget: "viseme_9" },
-  10: { id: "v10", name: "viseme_10", description: "ɔɪ",              morphTarget: "viseme_10" },
-  11: { id: "v11", name: "viseme_11", description: "aɪ",              morphTarget: "viseme_11" },
-  12: { id: "v12", name: "viseme_12", description: "h",               morphTarget: "viseme_12" },
-  13: { id: "v13", name: "viseme_13", description: "ɹ",               morphTarget: "viseme_13" },
-  14: { id: "v14", name: "viseme_14", description: "l",               morphTarget: "viseme_14" },
-  15: { id: "v15", name: "viseme_15", description: "s, z",            morphTarget: "viseme_15" },
-  16: { id: "v16", name: "viseme_16", description: "ʃ, tʃ, dʒ, ʒ",   morphTarget: "viseme_16" },
-  17: { id: "v17", name: "viseme_17", description: "ð",               morphTarget: "viseme_17" },
-  18: { id: "v18", name: "viseme_18", description: "f, v",            morphTarget: "viseme_18" },
-  19: { id: "v19", name: "viseme_19", description: "d, t, n, θ",      morphTarget: "viseme_19" },
-  20: { id: "v20", name: "viseme_20", description: "k, g, ŋ",         morphTarget: "viseme_20" },
-  21: { id: "v21", name: "viseme_21", description: "p, b, m",         morphTarget: "viseme_21" },
+  0: { id: "sil", name: "viseme_0", description: "Silence", morphTarget: null },
+  1: { id: "v1", name: "viseme_1", description: "æ, ə, ʌ", morphTarget: "viseme_1" },
+  2: { id: "v2", name: "viseme_2", description: "ɑ", morphTarget: "viseme_2" },
+  3: { id: "v3", name: "viseme_3", description: "ɔ", morphTarget: "viseme_3" },
+  4: { id: "v4", name: "viseme_4", description: "ɛ, ʊ", morphTarget: "viseme_4" },
+  5: { id: "v5", name: "viseme_5", description: "ɝ", morphTarget: "viseme_5" },
+  6: { id: "v6", name: "viseme_6", description: "j, i, ɪ", morphTarget: "viseme_6" },
+  7: { id: "v7", name: "viseme_7", description: "w, u", morphTarget: "viseme_7" },
+  8: { id: "v8", name: "viseme_8", description: "o", morphTarget: "viseme_8" },
+  9: { id: "v9", name: "viseme_9", description: "aʊ", morphTarget: "viseme_9" },
+  10: { id: "v10", name: "viseme_10", description: "ɔɪ", morphTarget: "viseme_10" },
+  11: { id: "v11", name: "viseme_11", description: "aɪ", morphTarget: "viseme_11" },
+  12: { id: "v12", name: "viseme_12", description: "h", morphTarget: "viseme_12" },
+  13: { id: "v13", name: "viseme_13", description: "ɹ", morphTarget: "viseme_13" },
+  14: { id: "v14", name: "viseme_14", description: "l", morphTarget: "viseme_14" },
+  15: { id: "v15", name: "viseme_15", description: "s, z", morphTarget: "viseme_15" },
+  16: { id: "v16", name: "viseme_16", description: "ʃ, tʃ, dʒ, ʒ", morphTarget: "viseme_16" },
+  17: { id: "v17", name: "viseme_17", description: "ð", morphTarget: "viseme_17" },
+  18: { id: "v18", name: "viseme_18", description: "f, v", morphTarget: "viseme_18" },
+  19: { id: "v19", name: "viseme_19", description: "d, t, n, θ", morphTarget: "viseme_19" },
+  20: { id: "v20", name: "viseme_20", description: "k, g, ŋ", morphTarget: "viseme_20" },
+  21: { id: "v21", name: "viseme_21", description: "p, b, m", morphTarget: "viseme_21" },
 };
 
 // Helper function to format visemes with detailed info
@@ -156,7 +156,7 @@ export const useLipsyncStore = create((set, get) => ({
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `visemes_${Date.now()}.json`;
+    link.download = `azure_visemes_${Date.now()}.json`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -174,6 +174,7 @@ export const useLipsyncStore = create((set, get) => ({
       new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), "")
     );
 
+    //  azure type
     const data = {
       text: lastOutput.text,
       timestamp: lastOutput.timestamp,
@@ -186,6 +187,8 @@ export const useLipsyncStore = create((set, get) => ({
       viseme_reference: VISEME_MAP,
     };
 
+
+    // generate header
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
