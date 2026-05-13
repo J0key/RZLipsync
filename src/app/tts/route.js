@@ -7,7 +7,7 @@ export async function GET(req) {
     process.env["SPEECH_REGION"]
   );
 
-  speechConfig.speechSynthesisVoiceName = `en-US-GuyNeural`;
+  speechConfig.speechSynthesisVoiceName = `id-ID-ArdiNeural`;
 
   const speechSynthesizer = new sdk.SpeechSynthesizer(speechConfig);
 

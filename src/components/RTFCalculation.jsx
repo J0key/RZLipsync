@@ -9,7 +9,7 @@ export const AUDIO_FORMAT = {
 const DEFAULT_SILENCE_THRESHOLD = 0.01;
 const DEFAULT_FRAME_MS = 10;
 const WAV_FORMAT_PCM = 1;
-const DEFAULT_DURATION_MODE = "trimmed";
+const DEFAULT_DURATION_MODE = "full";
 
 const getAudioContext = () => {
   const AudioContextClass = window.AudioContext || window.webkitAudioContext;
@@ -236,7 +236,7 @@ export const calculateRTFFromBlob = async (
 
   try {
     const wav = getPcmWavDurationWithoutSilence(arrayBuffer, trimOptions);
-    const duration = durationMode === "trimmed" ? wav.duration : wav.decodedDuration;
+    const duration = wav.decodedDuration;
 
     if (duration <= 0) {
       throw new Error("Decoded audio duration is 0.");
@@ -262,13 +262,13 @@ export const calculateRTFFromBlob = async (
     const audioBuffer = await audioContext.decodeAudioData(arrayBuffer.slice(0));
     const decodedDuration = audioBuffer.duration;
     const trimmedDuration = getDecodedDurationWithoutSilence(audioBuffer, trimOptions);
-    const duration = durationMode === "trimmed" ? trimmedDuration : decodedDuration;
+    const duration =  decodedDuration;
 
     if (duration <= 0) {
       throw new Error("Decoded audio duration is 0.");
     }
 
-    const rtf = processingTime / duration;
+    const rtf = processingTime / decodedDuration;
 
     return {
       rtf,
@@ -361,7 +361,7 @@ export const RTFCalculation = ({
           <h1 className="text-white text-2xl font-bold">RTF Calculation</h1>
         </div>
 
-        <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 mb-6 border border-white/20">
+        {/* <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 mb-6 border border-white/20">
           <h2 className="text-white text-lg font-semibold mb-4">Audio Format</h2>
           <div className="grid sm:grid-cols-2 gap-4 text-sm">
             <div>
@@ -373,7 +373,7 @@ export const RTFCalculation = ({
               <div className="text-white font-medium">{AUDIO_FORMAT.azureOutputFormat}</div>
             </div>
           </div>
-        </div>
+        </div> */}
 
         <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/20">
           <h2 className="text-white text-lg font-semibold mb-4">Result</h2>
@@ -406,16 +406,16 @@ export const RTFCalculation = ({
                 </div>
                 <div className="bg-black/20 rounded-xl p-4 border border-white/10">
                   <div className="text-gray-500 text-xs mb-1">RTF Duration</div>
-                  <div className="text-white text-2xl font-semibold">{result.duration.toFixed(3)}s</div>
+                  <div className="text-white text-2xl font-semibold">{result.rtf.toFixed(4)}s</div>
                 </div>
               </div>
 
-              <div className="bg-black/30 rounded-xl p-5 border border-white/10">
+              {/* <div className="bg-black/30 rounded-xl p-5 border border-white/10">
                 <div className="text-gray-400 text-sm mb-2">RTF = processingTime / duration</div>
                 <div className="text-green-300 text-5xl font-bold">{result.rtf.toFixed(4)}</div>
-              </div>
+              </div> */}
 
-              <div className="grid sm:grid-cols-2 gap-4 mt-6 text-sm">
+              {/* <div className="grid sm:grid-cols-2 gap-4 mt-6 text-sm">
                 <div>
                   <div className="text-gray-500 mb-1">Decoded Sample Rate</div>
                   <div className="text-gray-300">{result.sampleRate} Hz</div>
@@ -440,7 +440,7 @@ export const RTFCalculation = ({
                   <div className="text-gray-500 mb-1">Duration Source</div>
                   <div className="text-gray-300">{result.durationSource}</div>
                 </div>
-              </div>
+              </div> */}
 
               {lastOutput?.text && (
                 <p className="text-gray-500 text-xs mt-4">

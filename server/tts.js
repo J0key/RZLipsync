@@ -23,7 +23,7 @@ app.get("/api/tts", async (req, res) => {
       process.env.AZURE_SPEECH_REGION
     );
 
-    speechConfig.speechSynthesisVoiceName = "en-US-GuyNeural";
+    speechConfig.speechSynthesisVoiceName = "id-ID-ArdiNeural";
     speechConfig.speechSynthesisOutputFormat = sdk.SpeechSynthesisOutputFormat.Riff16Khz16BitMonoPcm;
 
     const speechSynthesizer = new sdk.SpeechSynthesizer(speechConfig);
@@ -49,7 +49,7 @@ app.get("/api/tts", async (req, res) => {
       })
       .join(" ");
     const ssml = `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="en-US">
-  <voice name="en-US-GuyNeural">${ssmlWords}</voice>
+  <voice name="id-ID-ArdiNeural">${ssmlWords}</voice>
 </speak>`;
 
     const result = await new Promise((resolve, reject) => {
