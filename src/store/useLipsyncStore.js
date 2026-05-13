@@ -61,8 +61,7 @@ export const useLipsyncStore = create((set, get) => ({
     const startedAt = performance.now();
 
     try {
-      // Call the TTS API (server runs on port 3002)
-      const response = await fetch(`http://localhost:3002/api/tts?text=${encodeURIComponent(text)}`);
+      const response = await fetch(`/api/tts?text=${encodeURIComponent(text)}`);
 
       if (!response.ok) {
         throw new Error("TTS request failed");
