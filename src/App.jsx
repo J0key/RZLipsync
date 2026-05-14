@@ -1,12 +1,25 @@
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { Canvas } from "@react-three/fiber";
 import { Experience } from "./components/Experience";
 import { TypingBox } from "./components/TypingBox";
 import { RTFCalculation } from "./components/RTFCalculation";
 import { VASEvaluationAzure } from "./components/VASEvaluationAzure";
 
+function LoadingScreen() {
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#ececec]">
+      <div className="relative w-16 h-16 mb-4">
+        <div className="absolute inset-0 rounded-full border-4 border-gray-300" />
+        <div className="absolute inset-0 rounded-full border-4 border-t-indigo-500 animate-spin" />
+      </div>
+      <p className="text-gray-600 text-sm font-medium tracking-wide">Loading...</p>
+    </div>
+  );
+}
+
 function App() {
   const [page, setPage] = useState("avatar"); // "avatar" | "vas" | "rtf"
+  const [avatarReady, setAvatarReady] = useState(false);
 
   return (
     <>
@@ -48,10 +61,14 @@ function App() {
         <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-10 flex justify-center">
           <TypingBox />
         </div>
+        {!avatarReady && <LoadingScreen />}
         <Canvas shadows camera={{ position: [0, 0, 8], fov: 42 }}>
           <color attach="background" args={["#ececec"]} />
-          <Experience />
+          <Suspense fallback={null}>
+            <Experience onReady={() => setAvatarReady(true)} />
+          </Suspense>
         </Canvas>
+
       </div>
 
       {page === "rtf" && <RTFCalculation onBack={() => setPage("avatar")} />}

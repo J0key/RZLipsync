@@ -20,13 +20,17 @@ export const VASEvaluationAzure = ({ onBack }) => {
       alert("Belum ada data viseme. Generate lipsync dulu.");
       return;
     }
+    if (!lastOutput?.wordBoundaries?.length) {
+      alert("Word boundary tidak tersedia. Re-generate lipsync dulu agar evaluasi VAS akurat.");
+      return;
+    }
 
     // Expected: dari hardcoded table (ground truth), per fonem per kata
     const expected = analyzeText(scriptText);
 
     // All detected visemes (termasuk silence untuk keperluan slicing)
     const allDetected = lastOutput.visemes; // [[timeMs, visemeId], ...]
-    const wordBoundaries = lastOutput.wordBoundaries ?? []; // [{ word, offsetMs }, ...]
+    const wordBoundaries = lastOutput.wordBoundaries; // [{ word, offsetMs }, ...]
 
     // Helper: ambil viseme yg jatuh dalam window [startMs, endMs)
     const getVisemesInWindow = (startMs, endMs) =>
@@ -39,16 +43,9 @@ export const VASEvaluationAzure = ({ onBack }) => {
       const { word, offsetMs } = wordBoundaries[i];
       const nextOffsetMs = wordBoundaries[i + 1]?.offsetMs ?? null;
       const key = word.toLowerCase();
-      // Jika ada kata duplikat, simpan sebagai array window
       if (!wordWindows[key]) wordWindows[key] = [];
       wordWindows[key].push({ startMs: offsetMs, endMs: nextOffsetMs });
     }
-
-    const hasWordBoundaries = wordBoundaries.length > 0;
-
-    // Fallback pool when no word boundaries: all non-silence visemes shared globally
-    const globalDetected = allDetected.filter(([, id]) => id !== 0);
-    const globalUsedDetected = new Set();
 
     // Tracker: berapa kali suatu kata sudah di-pakai (untuk duplikat)
     const wordUsageCount = {};
@@ -93,13 +90,8 @@ export const VASEvaluationAzure = ({ onBack }) => {
       const windows = wordWindows[wordKey];
       const window = windows?.[usageIdx] ?? null;
 
-      // Ambil detected visemes dalam window kata ini
-      // Fallback: jika tidak ada window, gunakan global pool
-      const usingGlobalPool = !window && !hasWordBoundaries;
       const detectedInWord = window
         ? getVisemesInWindow(window.startMs, window.endMs)
-        : usingGlobalPool
-        ? globalDetected
         : [];
 
       // Set-based matching: collect the set of morphTargets detected for this word
@@ -129,6 +121,7 @@ export const VASEvaluationAzure = ({ onBack }) => {
           index: ++rowIndex,
           word: e.word,
           phoneme: e.phoneme,
+          syllable: e.syllable,
           expectedId: e.visemeId,
           expectedLabel: e.visemeId !== null ? `${e.visemeId} (${expInfo?.short ?? "?"})` : "?",
           detectedId: isMatch ? matchedDet?.[1] ?? null : (detectedInWord.length > 0 ? detectedInWord[0][1] : null),
@@ -139,7 +132,7 @@ export const VASEvaluationAzure = ({ onBack }) => {
             : `${detectedInWord[0][1]} (${AZURE_VISEMES[detectedInWord[0][1]]?.short ?? "?"})`,
           isMatch,
           notInDict: false,
-          noWindow: !window && hasWordBoundaries,
+          noWindow: !window,
         });
       }
 
@@ -161,7 +154,7 @@ export const VASEvaluationAzure = ({ onBack }) => {
       );
     }
 
-    setAnalysisResult({ rows, correct, total, vasScore, hasWordBoundaries, wordDebug });
+    setAnalysisResult({ rows, correct, total, vasScore, wordDebug });
   };
 
   const scoreColor = (s) => s >= 80 ? "text-green-400" : s >= 60 ? "text-yellow-400" : "text-red-400";
@@ -257,11 +250,6 @@ export const VASEvaluationAzure = ({ onBack }) => {
               <p className="text-gray-500 text-xs mt-3">
                 VAS = Corrected Visemes / Total Evaluable Visemes × 100
               </p>
-              {!analysisResult.hasWordBoundaries && (
-                <p className="text-yellow-400/70 text-xs mt-1">
-                  Perhatian: data word-boundary tidak tersedia — re-generate lipsync agar alignment per kata aktif.
-                </p>
-              )}
             </div>
 
             {/* Comparison Table */}
@@ -289,7 +277,8 @@ export const VASEvaluationAzure = ({ onBack }) => {
                         <td className="py-2 px-3 text-gray-500 text-xs">{row.index}</td>
                         <td className="py-2 px-3">
                           <span className="text-white font-medium">{row.word}</span>
-                          <span className="text-blue-300 font-mono text-xs ml-2">{row.phoneme}</span>
+                          <span className="text-blue-300 font-mono text-xs ml-2">{row.syllable ?? row.phoneme}</span>
+                          <span className="text-gray-500 font-mono text-xs ml-1">({row.phoneme})</span>
                         </td>
                         <td className="py-2 px-3 font-mono text-green-300">
                           {row.notInDict

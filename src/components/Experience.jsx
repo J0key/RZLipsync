@@ -1,11 +1,15 @@
 import { Environment, useTexture } from "@react-three/drei";
 import { Avatar } from "./Avatar";
 import { useThree } from "@react-three/fiber";
-import { TypingBox } from "./TypingBox";
+import { useEffect } from "react";
 
-export const Experience = () => {
+export const Experience = ({ onReady }) => {
   const texture = useTexture("textures/school.jpg");
   const viewport = useThree((state) => state.viewport);
+
+  useEffect(() => {
+    if (texture && onReady) onReady();
+  }, [texture]);
 
   return (
     <>

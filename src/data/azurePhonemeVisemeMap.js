@@ -80,148 +80,135 @@ export const PHONEME_TO_VISEME = {
 // Digunakan sebagai "kunci jawaban" untuk VAS evaluation
 export const WORD_PHONEME_VISEME = {
 
-  stop: [
-    { p: "S", v: 15 },
-    { p: "T", v: 19 },
-    { p: "AA", v: 2 },
-    { p: "P", v: 21 }
+  // --- Kata tunggal ---
+
+  // maaf: ma-af
+  maaf: [
+    { p: "M",  v: 21, s: "ma" },
+    { p: "AA", v: 2,  s: "ma" },
+    { p: "AA", v: 2,  s: "af" },
+    { p: "F",  v: 18, s: "af" }
   ],
 
-  navigation: [
-    { p: "N", v: 19 },
-    { p: "AE", v: 1 },
-    { p: "V", v: 18 },
-    { p: "IH", v: 6 },
-    { p: "G", v: 20 },
-    { p: "EY", v: 11 },
-    { p: "SH", v: 16 },
-    { p: "AH", v: 1 },
-    { p: "N", v: 19 }
+  // tolong: to-long
+  tolong: [
+    { p: "T",  v: 19, s: "to"   },
+    { p: "OW", v: 8,  s: "to"   },
+    { p: "L",  v: 14, s: "long" },
+    { p: "OW", v: 8,  s: "long" },
+    { p: "NG", v: 20, s: "long" }
   ],
 
-  excuse: [
-    { p: "IH", v: 6 },
-    { p: "K", v: 20 },
-    { p: "S", v: 15 },
-    { p: "K", v: 20 },
-    { p: "Y", v: 6 },
-    { p: "UW", v: 7 },
-    { p: "Z", v: 15 }
+  // permisi: per-mi-si
+  permisi: [
+    { p: "P",  v: 21, s: "per" },
+    { p: "ER", v: 5,  s: "per" },
+    { p: "M",  v: 21, s: "mi"  },
+    { p: "IY", v: 6,  s: "mi"  },
+    { p: "S",  v: 15, s: "si"  },
+    { p: "IY", v: 6,  s: "si"  }
   ],
 
-  me: [
-    { p: "M", v: 21 },
-    { p: "IY", v: 6 }
+  // halo: ha-lo
+  halo: [
+    { p: "HH", v: 12, s: "ha" },
+    { p: "AA", v: 2,  s: "ha" },
+    { p: "L",  v: 14, s: "lo" },
+    { p: "OW", v: 8,  s: "lo" }
   ],
 
-  i: [
-    { p: "AY", v: 11 }
+  // mulai: mu-lai
+  mulai: [
+    { p: "M",  v: 21, s: "mu"  },
+    { p: "UW", v: 7,  s: "mu"  },
+    { p: "L",  v: 14, s: "lai" },
+    { p: "AA", v: 2,  s: "lai" },
+    { p: "IY", v: 6,  s: "lai" }
   ],
 
-  am: [
-    { p: "AE", v: 1 },
-    { p: "M", v: 21 }
+  // berhenti: ber-hen-ti
+  berhenti: [
+    { p: "B",  v: 21, s: "ber" },
+    { p: "ER", v: 5,  s: "ber" },
+    { p: "HH", v: 12, s: "hen" },
+    { p: "EH", v: 4,  s: "hen" },
+    { p: "N",  v: 19, s: "hen" },
+    { p: "T",  v: 19, s: "ti"  },
+    { p: "IY", v: 6,  s: "ti"  }
   ],
 
-  sorry: [
-    { p: "S", v: 15 },
-    { p: "AO", v: 3 },
-    { p: "R", v: 13 },
-    { p: "IY", v: 6 }
+  // lanjut: lan-jut
+  lanjut: [
+    { p: "L",  v: 14, s: "lan" },
+    { p: "AA", v: 2,  s: "lan" },
+    { p: "N",  v: 19, s: "lan" },
+    { p: "JH", v: 16, s: "jut" },
+    { p: "UW", v: 7,  s: "jut" },
+    { p: "T",  v: 19, s: "jut" }
   ],
 
-  thank: [
-    { p: "TH", v: 19 },
-    { p: "AE", v: 1 },
-    { p: "NG", v: 20 },
-    { p: "K", v: 20 }
+  // sakit: sa-kit
+  sakit: [
+    { p: "S",  v: 15, s: "sa"  },
+    { p: "AA", v: 2,  s: "sa"  },
+    { p: "K",  v: 20, s: "kit" },
+    { p: "IH", v: 6,  s: "kit" },
+    { p: "T",  v: 19, s: "kit" }
   ],
 
-  you: [
-    { p: "Y", v: 6 },
-    { p: "UW", v: 7 }
+  // kembali: kem-ba-li
+  kembali: [
+    { p: "K",  v: 20, s: "kem" },
+    { p: "EH", v: 4,  s: "kem" },
+    { p: "M",  v: 21, s: "kem" },
+    { p: "B",  v: 21, s: "ba"  },
+    { p: "AA", v: 2,  s: "ba"  },
+    { p: "L",  v: 14, s: "li"  },
+    { p: "IY", v: 6,  s: "li"  }
   ],
 
-  good: [
-    { p: "G", v: 20 },
-    { p: "UH", v: 4 },
-    { p: "D", v: 19 }
+  // awas: a-was
+  awas: [
+    { p: "AA", v: 2,  s: "a"   },
+    { p: "W",  v: 7,  s: "was" },
+    { p: "AA", v: 2,  s: "was" },
+    { p: "S",  v: 15, s: "was" }
   ],
 
-  bye: [
-    { p: "B", v: 21 },
-    { p: "AY", v: 11 }
+  // terima: te-ri-ma
+  terima: [
+    { p: "T",  v: 19, s: "te" },
+    { p: "ER", v: 5,  s: "te" },
+    { p: "IY", v: 6,  s: "ri" },
+    { p: "M",  v: 21, s: "ma" },
+    { p: "AA", v: 2,  s: "ma" },
   ],
 
-  love: [
-    { p: "L", v: 14 },
-    { p: "AH", v: 1 },
-    { p: "V", v: 18 }
+  // kasih: ka-sih
+  kasih: [
+    { p: "K",  v: 20, s: "ka"  },
+    { p: "AA", v: 2,  s: "ka"  },
+    { p: "S",  v: 15, s: "sih" },
+    { p: "IH", v: 6,  s: "sih" },
+    { p: "HH", v: 12, s: "sih" }
   ],
 
-  this: [
-    { p: "DH", v: 17 },
-    { p: "IH", v: 6 },
-    { p: "S", v: 15 }
+  // saya: sa-ya
+  saya: [
+    { p: "S",  v: 15, s: "sa" },
+    { p: "AA", v: 2,  s: "sa" },
+    { p: "Y",  v: 6,  s: "ya" },
+    { p: "AA", v: 2,  s: "ya" },
   ],
 
-  game: [
-    { p: "G", v: 20 },
-    { p: "EY", v: 11 },
-    { p: "M", v: 21 }
+  // minta: min-ta
+  minta: [
+    { p: "M",  v: 21, s: "min" },
+    { p: "IH", v: 6,  s: "min" },
+    { p: "N",  v: 19, s: "min" },
+    { p: "T",  v: 19, s: "ta"  },
+    { p: "AA", v: 2,  s: "ta"  },
   ],
-
-  nice: [
-    { p: "N", v: 19 },
-    { p: "AY", v: 11 },
-    { p: "S", v: 15 }
-  ],
-
-  to: [
-    { p: "T", v: 19 },
-    { p: "UW", v: 7 }
-  ],
-
-  meet: [
-    { p: "M", v: 21 },
-    { p: "IY", v: 6 },
-    { p: "T", v: 19 }
-  ],
-
-  are: [
-    { p: "AA", v: 2 },
-    { p: "R", v: 13 }
-  ],
-
-  welcome: [
-    { p: "W", v: 7 },
-    { p: "EH", v: 4 },
-    { p: "L", v: 14 },
-    { p: "K", v: 20 },
-    { p: "AH", v: 1 },
-    { p: "M", v: 21 }
-  ],
-
-  how: [
-    { p: "HH", v: 12 },
-    { p: "AW", v: 9 }
-  ],
-
-  have: [
-    { p: "HH", v: 12 },
-    { p: "AE", v: 1 },
-    { p: "V", v: 18 }
-  ],
-
-  a: [
-    { p: "AH", v: 1 }
-  ],
-
-  time: [
-    { p: "T", v: 19 },
-    { p: "AY", v: 11 },
-    { p: "M", v: 21 }
-  ]
 
 };
 /**
@@ -229,21 +216,29 @@ export const WORD_PHONEME_VISEME = {
  * berdasarkan WORD_PHONEME_VISEME table.
  */
 export function analyzeText(text) {
-  const words = text
-    .toLowerCase()
-    .replace(/[^a-z0-9\s'-]/g, "")
-    .split(/\s+/)
-    .filter(Boolean);
-
+  const normalized = text.toLowerCase().replace(/[^a-z\s]/g, "").trim();
+  const tokens = normalized.split(/\s+/).filter(Boolean);
   const result = [];
-  for (const word of words) {
-    const entries = WORD_PHONEME_VISEME[word];
-    if (!entries) {
-      result.push({ word, phoneme: "?", visemeId: null, notInDict: true });
-      continue;
+  let i = 0;
+
+  while (i < tokens.length) {
+    // coba cocokkan frasa terpanjang dulu (max 3 kata)
+    let matched = false;
+    for (let len = Math.min(3, tokens.length - i); len >= 1; len--) {
+      const phrase = tokens.slice(i, i + len).join(" ");
+      const entries = WORD_PHONEME_VISEME[phrase];
+      if (entries) {
+        for (const { p, v, s } of entries) {
+          result.push({ word: phrase, phoneme: p, syllable: s ?? p, visemeId: v, notInDict: false });
+        }
+        i += len;
+        matched = true;
+        break;
+      }
     }
-    for (const { p, v } of entries) {
-      result.push({ word, phoneme: p, visemeId: v, notInDict: false });
+    if (!matched) {
+      result.push({ word: tokens[i], phoneme: "?", visemeId: null, notInDict: true });
+      i++;
     }
   }
   return result;
