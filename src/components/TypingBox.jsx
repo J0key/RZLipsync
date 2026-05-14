@@ -24,7 +24,7 @@ export const TypingBox = () => {
   };
 
   return (
-    <div className="bg-white/15 backdrop-blur-xl rounded-2xl p-6 w-[500px] max-w-[90vw] shadow-lg border border-white/20">
+    <div className="bg-white/15 backdrop-blur-xl rounded-2xl p-4 sm:p-6 w-full max-w-[500px] shadow-lg border border-white/20">
       <h2 className="text-gray-800 text-xl font-semibold mb-2">
         Azure Text-to-Speech
       </h2>
@@ -38,7 +38,7 @@ export const TypingBox = () => {
           <span>Generating...</span>
         </div>
       ) : (
-        <div className="flex gap-3 items-center">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-stretch sm:items-center">
           <input
             className="flex-1 bg-black/30 border-none rounded-full py-3 px-5 text-white text-sm outline-none placeholder:text-white/50"
             placeholder="Drop your text here..."
@@ -53,14 +53,14 @@ export const TypingBox = () => {
           />
           {currentMessage ? (
             <button
-              className="bg-red-500/80 hover:bg-red-500 rounded-full py-3 px-7 text-white text-sm font-medium cursor-pointer transition-all"
+              className="bg-red-500/80 hover:bg-red-500 rounded-full py-3 px-7 text-white text-sm font-medium cursor-pointer transition-all w-full sm:w-auto shrink-0"
               onClick={handleStop}
             >
               Stop
             </button>
           ) : (
             <button
-              className="bg-white/90 hover:bg-white rounded-full py-3 px-7 text-gray-800 text-sm font-medium cursor-pointer transition-all"
+              className="bg-white/90 hover:bg-white rounded-full py-3 px-7 text-gray-800 text-sm font-medium cursor-pointer transition-all w-full sm:w-auto shrink-0"
               onClick={handleSubmit}
             >
               Generate
