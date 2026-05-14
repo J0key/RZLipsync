@@ -49,8 +49,9 @@ export const PHONEME_TO_VISEME = {
   L: "H",
 };
 
-// Common English word → ARPAbet phoneme dictionary
+// Common word → ARPAbet phoneme dictionary (Indonesian + English)
 export const WORD_PHONEMES = {
+  // === ENGLISH ===
   stop: ["S", "T", "AA", "P"],
 
   navigation: ["N", "AE", "V", "IH", "G", "EY", "SH", "AH", "N"],
@@ -95,8 +96,47 @@ export const WORD_PHONEMES = {
 
   a: ["AH"],
 
-  time: ["T", "AY", "M"]
+  time: ["T", "AY", "M"],
 
+  // === INDONESIAN ===
+  // Kata tunggal
+  maaf: ["M", "AA", "AH", "F"],
+
+  tolong: ["T", "AO", "L", "AO", "NG"],
+
+  permisi: ["P", "ER", "M", "IH", "S", "IY"],
+
+  halo: ["HH", "AA", "L", "AO"],
+
+  mulai: ["M", "UH", "L", "AY"],
+
+  berhenti: ["B", "ER", "HH", "EH", "N", "T", "IY"],
+
+  lanjut: ["L", "AA", "N", "JH", "UH", "T"],
+
+  sakit: ["S", "AA", "K", "IH", "T"],
+
+  kembali: ["K", "EH", "M", "B", "AA", "L", "IY"],
+
+  awas: ["AA", "W", "AA", "S"],
+
+  // Kata dalam frasa
+  terima: ["T", "ER", "R", "IY", "M", "AH"],
+
+  kasih: ["K", "AA", "S", "IH", "HH"],
+
+  saya: ["S", "AA", "Y", "AH"],
+
+  minta: ["M", "IH", "N", "T", "AH"],
+
+};
+
+// Indonesian phrase → flat ARPAbet phoneme list
+export const PHRASE_PHONEMES = {
+  "terima kasih": ["T", "ER", "R", "IY", "M", "AH", "K", "AA", "S", "IH", "HH"],
+  "saya minta tolong": ["S", "AA", "Y", "AH", "M", "IH", "N", "T", "AH", "T", "AO", "L", "AO", "NG"],
+  "saya minta maaf": ["S", "AA", "Y", "AH", "M", "IH", "N", "T", "AH", "M", "AA", "AH", "F"],
+  "minta tolong": ["M", "IH", "N", "T", "AH", "T", "AO", "L", "AO", "NG"],
 };
 
 // Get phonemes for a word (returns null if not found in dictionary)
@@ -110,12 +150,28 @@ export function getExpectedViseme(phoneme) {
 }
 
 // Break a sentence into phonemes with expected visemes
+// Supports Indonesian phrase lookup before falling back to word-by-word
 export function analyzeSentence(text) {
-  const words = text.trim().split(/\s+/);
+  const normalized = text.trim().toLowerCase().replace(/[^a-zA-Z\s]/g, "");
+
+  // Check if whole text matches a known phrase
+  if (PHRASE_PHONEMES[normalized]) {
+    return PHRASE_PHONEMES[normalized].map((phoneme) => {
+      const expectedViseme = getExpectedViseme(phoneme);
+      return {
+        word: normalized,
+        phoneme,
+        expectedViseme,
+        expectedVisemeName: expectedViseme ? RHUBARB_VISEMES[expectedViseme]?.name : "?",
+        expectedMorphTarget: expectedViseme ? RHUBARB_VISEMES[expectedViseme]?.morphTarget : "?",
+      };
+    });
+  }
+
+  const words = normalized.split(/\s+/);
   const result = [];
 
-  for (const word of words) {
-    const cleanWord = word.replace(/[^a-zA-Z]/g, "").toLowerCase();
+  for (const cleanWord of words) {
     if (!cleanWord) continue;
 
     const phonemes = getWordPhonemes(cleanWord);

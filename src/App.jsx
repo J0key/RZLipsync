@@ -52,11 +52,23 @@ function App() {
       </div>
       <div className="absolute top-4 right-4 z-10 flex gap-2">
         <button
-          type="button"
           onClick={() => navigate(PAGES.rtf)}
-          aria-pressed={currentPage === PAGES.rtf}
-          className="bg-white/15 backdrop-blur-xl hover:bg-white/25 rounded-xl py-2 px-4 text-gray-700 text-sm font-medium cursor-pointer transition-all border border-white/20"
+          className="bg-emerald-500/70 hover:bg-emerald-500/90 rounded-xl py-2 px-4 text-white text-sm font-medium cursor-pointer transition-all flex items-center gap-2 backdrop-blur-md border border-white/10"
         >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="w-4 h-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
           RTF Calculation
         </button>
         <button

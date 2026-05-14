@@ -9,7 +9,7 @@ export const AUDIO_FORMAT = {
 const DEFAULT_SILENCE_THRESHOLD = 0.01;
 const DEFAULT_FRAME_MS = 10;
 const WAV_FORMAT_PCM = 1;
-const DEFAULT_DURATION_MODE = "trimmed";
+const DEFAULT_DURATION_MODE = "full";
 
 const getAudioContext = () => {
   const AudioContextClass = window.AudioContext || window.webkitAudioContext;
@@ -43,13 +43,17 @@ const readChunkId = (view, offset) =>
     view.getUint8(offset),
     view.getUint8(offset + 1),
     view.getUint8(offset + 2),
-    view.getUint8(offset + 3)
+    view.getUint8(offset + 3),
   );
 
 const findWavChunks = (arrayBuffer) => {
   const view = new DataView(arrayBuffer);
 
-  if (view.byteLength < 12 || readChunkId(view, 0) !== "RIFF" || readChunkId(view, 8) !== "WAVE") {
+  if (
+    view.byteLength < 12 ||
+    readChunkId(view, 0) !== "RIFF" ||
+    readChunkId(view, 8) !== "WAVE"
+  ) {
     throw new Error("Audio is not a valid RIFF/WAVE file.");
   }
 
@@ -97,11 +101,15 @@ const parsePcmWav = (arrayBuffer) => {
   const bitsPerSample = view.getUint16(fmtChunk.offset + 14, true);
 
   if (audioFormat !== WAV_FORMAT_PCM) {
-    throw new Error(`Unsupported WAV format code ${audioFormat}. Expected PCM.`);
+    throw new Error(
+      `Unsupported WAV format code ${audioFormat}. Expected PCM.`,
+    );
   }
 
   if (bitsPerSample !== 16) {
-    throw new Error(`Unsupported PCM bit depth ${bitsPerSample}. Expected 16-bit.`);
+    throw new Error(
+      `Unsupported PCM bit depth ${bitsPerSample}. Expected 16-bit.`,
+    );
   }
 
   if (channels <= 0 || sampleRate <= 0 || blockAlign <= 0 || byteRate <= 0) {
@@ -109,7 +117,7 @@ const parsePcmWav = (arrayBuffer) => {
   }
 
   const totalFrames = Math.floor(dataChunk.size / blockAlign);
-  const decodedDuration = (totalFrames / sampleRate) - 0.05;
+  const decodedDuration = totalFrames / sampleRate - 0.05;
 
   return {
     view,
@@ -145,7 +153,7 @@ export const getPcmWavDurationWithoutSilence = (
   {
     silenceThreshold = DEFAULT_SILENCE_THRESHOLD,
     frameMs = DEFAULT_FRAME_MS,
-  } = {}
+  } = {},
 ) => {
   const wav = parsePcmWav(arrayBuffer);
   const frameSize = Math.max(1, Math.floor((wav.sampleRate * frameMs) / 1000));
@@ -188,9 +196,12 @@ export const getDecodedDurationWithoutSilence = (
   {
     silenceThreshold = DEFAULT_SILENCE_THRESHOLD,
     frameMs = DEFAULT_FRAME_MS,
-  } = {}
+  } = {},
 ) => {
-  const frameSize = Math.max(1, Math.floor((audioBuffer.sampleRate * frameMs) / 1000));
+  const frameSize = Math.max(
+    1,
+    Math.floor((audioBuffer.sampleRate * frameMs) / 1000),
+  );
   const totalSamples = audioBuffer.length;
   let firstAudibleSample = null;
   let lastAudibleSample = null;
@@ -225,7 +236,7 @@ export const getDecodedDurationWithoutSilence = (
 export const calculateRTFFromBlob = async (
   audioBlob,
   processingTime,
-  { durationMode = DEFAULT_DURATION_MODE, ...trimOptions } = {}
+  { durationMode = DEFAULT_DURATION_MODE, ...trimOptions } = {},
 ) => {
   if (!audioBlob) {
     throw new Error("Audio blob is required.");
@@ -236,13 +247,15 @@ export const calculateRTFFromBlob = async (
 
   try {
     const wav = getPcmWavDurationWithoutSilence(arrayBuffer, trimOptions);
-    const duration = durationMode === "trimmed" ? wav.duration : wav.decodedDuration;
+    const duration =
+      // durationMode === "trimmed" ? wav.duration : wav.decodedDuration;
+      (durationMode = wav.decodedDuration);
 
     if (duration <= 0) {
       throw new Error("Decoded audio duration is 0.");
     }
 
-    const rtf = processingTime / duration;
+    const rtf = processingTime / decodedDuration;
 
     return {
       rtf,
@@ -259,10 +272,16 @@ export const calculateRTFFromBlob = async (
     };
   } catch (wavError) {
     audioContext = getAudioContext();
-    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer.slice(0));
+    const audioBuffer = await audioContext.decodeAudioData(
+      arrayBuffer.slice(0),
+    );
     const decodedDuration = audioBuffer.duration;
-    const trimmedDuration = getDecodedDurationWithoutSilence(audioBuffer, trimOptions);
-    const duration = durationMode === "trimmed" ? trimmedDuration : decodedDuration;
+    const trimmedDuration = getDecodedDurationWithoutSilence(
+      audioBuffer,
+      trimOptions,
+    );
+    const duration =
+      durationMode === "trimmed" ? trimmedDuration : decodedDuration;
 
     if (duration <= 0) {
       throw new Error("Decoded audio duration is 0.");
@@ -291,7 +310,7 @@ export const calculateRTFFromBlob = async (
 export const calculateRTFFromResponse = async (
   response,
   processingTime,
-  options = {}
+  options = {},
 ) => {
   const audioBlob = await response.blob();
 
@@ -304,9 +323,10 @@ export const RTFCalculation = ({
   onResult,
   onBack,
 }) => {
-  const {lastOutput, loading } = useLipsyncStore();
+  const { lastOutput, loading } = useLipsyncStore();
   const audioBlob = audioBlobProp ?? lastOutput?.audioBlob ?? null;
-  const processingTime = processingTimeProp ?? lastOutput?.processingTime ?? null;
+  const processingTime =
+    processingTimeProp ?? lastOutput?.processingTime ?? null;
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
 
@@ -322,7 +342,10 @@ export const RTFCalculation = ({
 
       try {
         setError("");
-        const nextResult = await calculateRTFFromBlob(audioBlob, processingTime);
+        const nextResult = await calculateRTFFromBlob(
+          audioBlob,
+          processingTime,
+        );
 
         if (isMounted) {
           setResult(nextResult);
@@ -352,8 +375,19 @@ export const RTFCalculation = ({
               onClick={onBack}
               className="bg-white/10 hover:bg-white/20 rounded-full py-2 px-4 text-white text-sm cursor-pointer transition-all flex items-center gap-2"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-4 h-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
+                />
               </svg>
               Back to Avatar
             </button>
@@ -361,7 +395,8 @@ export const RTFCalculation = ({
           <h1 className="text-white text-2xl font-bold">RTF Calculation</h1>
         </div>
 
-        <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 mb-6 border border-white/20">
+        {/* 
+<div className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 mb-6 border border-white/20">
           <h2 className="text-white text-lg font-semibold mb-4">Audio Format</h2>
           <div className="grid sm:grid-cols-2 gap-4 text-sm">
             <div>
@@ -374,6 +409,7 @@ export const RTFCalculation = ({
             </div>
           </div>
         </div>
+ */}
 
         <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/20">
           <h2 className="text-white text-lg font-semibold mb-4">Result</h2>
@@ -387,7 +423,8 @@ export const RTFCalculation = ({
 
           {!loading && (!audioBlob || !Number.isFinite(processingTime)) && (
             <div className="text-yellow-300/80 text-sm">
-              Generate TTS audio on the Avatar page first. The RTF calculation uses the last generated audio blob and measured processing time.
+              Generate TTS audio on the Avatar page first. The RTF calculation
+              uses the last generated audio blob and measured processing time.
             </div>
           )}
 
@@ -397,54 +434,33 @@ export const RTFCalculation = ({
             <>
               <div className="grid sm:grid-cols-3 gap-4 mb-6">
                 <div className="bg-black/20 rounded-xl p-4 border border-white/10">
-                  <div className="text-gray-500 text-xs mb-1">Processing Time</div>
-                  <div className="text-white text-2xl font-semibold">{result.processingTime.toFixed(3)}s</div>
+                  <div className="text-gray-500 text-xs mb-1">
+                    Processing Time
+                  </div>
+                  <div className="text-white text-2xl font-semibold">
+                    {result.processingTime.toFixed(3)}s
+                  </div>
                 </div>
                 <div className="bg-black/20 rounded-xl p-4 border border-white/10">
-                  <div className="text-gray-500 text-xs mb-1">Full WAV Duration</div>
-                  <div className="text-white text-2xl font-semibold">{result.decodedDuration.toFixed(3)}s</div>
+                  <div className="text-gray-500 text-xs mb-1">
+                    Full WAV Duration
+                  </div>
+                  <div className="text-white text-2xl font-semibold">
+                    {result.decodedDuration.toFixed(3)}s
+                  </div>
                 </div>
                 <div className="bg-black/20 rounded-xl p-4 border border-white/10">
                   <div className="text-gray-500 text-xs mb-1">RTF Duration</div>
-                  <div className="text-white text-2xl font-semibold">{result.duration.toFixed(3)}s</div>
-                </div>
-              </div>
-
-              <div className="bg-black/30 rounded-xl p-5 border border-white/10">
-                <div className="text-gray-400 text-sm mb-2">RTF = processingTime / duration</div>
-                <div className="text-green-300 text-5xl font-bold">{result.rtf.toFixed(4)}</div>
-              </div>
-
-              <div className="grid sm:grid-cols-2 gap-4 mt-6 text-sm">
-                <div>
-                  <div className="text-gray-500 mb-1">Decoded Sample Rate</div>
-                  <div className="text-gray-300">{result.sampleRate} Hz</div>
-                </div>
-                <div>
-                  <div className="text-gray-500 mb-1">Decoded Channels</div>
-                  <div className="text-gray-300">{result.channels}</div>
-                </div>
-                <div>
-                  <div className="text-gray-500 mb-1">Trimmed Audible Duration</div>
-                  <div className="text-gray-300">{result.trimmedDuration.toFixed(3)}s</div>
-                </div>
-                <div>
-                  <div className="text-gray-500 mb-1">Duration Mode</div>
-                  <div className="text-gray-300">{result.durationMode}</div>
-                </div>
-                <div>
-                  <div className="text-gray-500 mb-1">Trailing Silence</div>
-                  <div className="text-gray-300">{result.trailingSilence.toFixed(3)}s</div>
-                </div>
-                <div className="sm:col-span-2">
-                  <div className="text-gray-500 mb-1">Duration Source</div>
-                  <div className="text-gray-300">{result.durationSource}</div>
+                  <div className="text-white text-2xl font-semibold">
+                    {result.rtf.toFixed(4)}s
+                  </div>
                 </div>
               </div>
 
               {lastOutput?.text && (
                 <p className="text-gray-500 text-xs mt-4">
-                  Last: &ldquo;{lastOutput.text.substring(0, 80)}{lastOutput.text.length > 80 ? "..." : ""}&rdquo;
+                  Last: &ldquo;{lastOutput.text.substring(0, 80)}
+                  {lastOutput.text.length > 80 ? "..." : ""}&rdquo;
                 </p>
               )}
             </>

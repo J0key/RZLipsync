@@ -63,7 +63,7 @@ const synthesizeAzureTTS = async ({ text, voice }) => {
   const safeText = text.replace(/[<>]/g, "");
   const ssml = [
     '<?xml version="1.0" encoding="utf-8"?>',
-    '<speak version="1.0" xml:lang="en-US">',
+    '<speak version="1.0" xml:lang="id-ID">',
     `<voice name="${voice}">${safeText}</voice>`,
     "</speak>",
   ].join("");
@@ -131,7 +131,7 @@ const handler = async (req, res) => {
     const body = await collectRequestBody(req);
     const payload = JSON.parse(body || "{}");
     const text = String(payload.text || "").trim();
-    const voice = "en-US-GuyNeural";
+    const voice = "id-ID-ArdiNeural";
 
     if (!text) {
       jsonResponse(res, 400, { error: "Text is required" });
