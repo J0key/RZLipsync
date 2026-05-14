@@ -10,7 +10,7 @@ function LoadingScreen() {
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#ececec]">
       <div className="relative w-16 h-16 mb-4">
         <div className="absolute inset-0 rounded-full border-4 border-gray-300" />
-        <div className="absolute inset-0 rounded-full border-4 border-t-indigo-500 animate-spin" />
+        <div className="absolute inset-0 rounded-full border-4 border-t-emerald-500 animate-spin" />
       </div>
       <p className="text-gray-600 text-sm font-medium tracking-wide">Loading...</p>
     </div>

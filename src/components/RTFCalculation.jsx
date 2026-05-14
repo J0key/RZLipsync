@@ -236,7 +236,7 @@ export const calculateRTFFromBlob = async (
 
   try {
     const wav = getPcmWavDurationWithoutSilence(arrayBuffer, trimOptions);
-    const duration = wav.decodedDuration;
+    const duration = durationMode === "trimmed" ? wav.duration : wav.decodedDuration;
 
     if (duration <= 0) {
       throw new Error("Decoded audio duration is 0.");
@@ -405,8 +405,8 @@ export const RTFCalculation = ({
                   <div className="text-white text-2xl font-semibold">{result.decodedDuration.toFixed(3)}s</div>
                 </div>
                 <div className="bg-black/20 rounded-xl p-4 border border-white/10">
-                  <div className="text-gray-500 text-xs mb-1">RTF Duration</div>
-                  <div className="text-white text-2xl font-semibold">{result.rtf.toFixed(4)}s</div>
+                  <div className="text-gray-500 text-xs mb-1">RTF</div>
+                  <div className="text-white text-2xl font-semibold">{result.rtf.toFixed(4)}</div>
                 </div>
               </div>
 
