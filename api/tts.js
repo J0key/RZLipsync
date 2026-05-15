@@ -14,9 +14,12 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "Azure credentials not configured" });
   }
 
+  const voice = req.query.voice || "id-ID-ArdiNeural";
+  const langCode = voice.split("-").slice(0, 2).join("-");
+
   try {
     const speechConfig = sdk.SpeechConfig.fromSubscription(speechKey, speechRegion);
-    speechConfig.speechSynthesisVoiceName = "id-ID-ArdiNeural";
+    speechConfig.speechSynthesisVoiceName = voice;
     speechConfig.speechSynthesisOutputFormat =
       sdk.SpeechSynthesisOutputFormat.Riff16Khz16BitMonoPcm;
 
@@ -41,8 +44,8 @@ export default async function handler(req, res) {
       })
       .join(" ");
 
-    const ssml = `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="en-US">
-  <voice name="id-ID-ArdiNeural">${ssmlWords}</voice>
+    const ssml = `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="${langCode}">
+  <voice name="${voice}">${ssmlWords}</voice>
 </speak>`;
 
     const result = await new Promise((resolve, reject) => {
