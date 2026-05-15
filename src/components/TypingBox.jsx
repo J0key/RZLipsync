@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLipsyncStore } from "../store/useLipsyncStore";
+import { useLipsyncStore, VOICES } from "../store/useLipsyncStore";
 
 export const TypingBox = () => {
   const [text, setText] = useState("");
@@ -10,7 +10,14 @@ export const TypingBox = () => {
     currentMessage,
     lastOutput,
     downloadAll,
+    language,
+    setLanguage,
   } = useLipsyncStore();
+
+  const handleSwitch = (lang) => {
+    if (currentMessage) stop();
+    setLanguage(lang);
+  };
 
   const handleSubmit = () => {
     if (text.trim()) {
@@ -25,12 +32,28 @@ export const TypingBox = () => {
 
   return (
     <div className="bg-white/15 backdrop-blur-xl rounded-2xl p-4 sm:p-6 w-full max-w-[500px] shadow-lg border border-white/20">
-      <h2 className="text-gray-800 text-xl font-semibold mb-2">
-        Azure Text-to-Speech
-      </h2>
-      {/* <p className="text-gray-600 text-sm mb-4">
-        Type a sentence you want to say in Japanese and AI Sensei will translate it for you.
-      </p> */}
+      <div className="flex flex-col items-center justify-between mb-3">
+        <div className="text-gray-800 text-xl font-semibold mb-3">
+          Azure Text-to-Speech
+        </div>
+        {/* Language toggle */}
+        <div className="flex gap-1.5">
+          {Object.entries(VOICES).map(([key, voice]) => (
+            <button
+              key={key}
+              onClick={() => handleSwitch(key)}
+              className={`flex items-center gap-1 rounded-lg py-1 px-2.5 text-xs font-medium transition-all border ${
+                language === key
+                  ? "bg-emerald-500 text-white border-emerald-600"
+                  : "bg-white/30 text-gray-700 border-white/30 hover:bg-white/50"
+              }`}
+            >
+              <span>{voice.flag}</span>
+              {voice.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {loading ? (
         <div className="flex justify-center items-center py-3 gap-3 text-gray-800">
@@ -70,7 +93,7 @@ export const TypingBox = () => {
       )}
 
       {/* Download Section */}
-      {lastOutput && !loading && (
+      {/* {lastOutput && !loading && (
         <div className="border-t border-white/20 mt-4 pt-4">
           <p className="text-gray-600 text-xs mb-2">Download Output:</p>
           <button
@@ -98,7 +121,7 @@ export const TypingBox = () => {
             {lastOutput.text.length > 30 ? "..." : ""}"
           </p>
         </div>
-      )}
+      )} */}
     </div>
   );
 };

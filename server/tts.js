@@ -10,8 +10,12 @@ app.use(cors());
 
 const PORT = 3002;
 
+const ALLOWED_VOICES = new Set(["id-ID-ArdiNeural", "en-US-GuyNeural"]);
+
 app.get("/api/tts", async (req, res) => {
   const text = req.query.text;
+  const voiceParam = req.query.voice;
+  const voice = ALLOWED_VOICES.has(voiceParam) ? voiceParam : "id-ID-ArdiNeural";
 
   if (!text) {
     return res.status(400).json({ error: "Text is required" });
@@ -23,7 +27,7 @@ app.get("/api/tts", async (req, res) => {
       process.env.AZURE_SPEECH_REGION
     );
 
-    speechConfig.speechSynthesisVoiceName = "id-ID-ArdiNeural";
+    speechConfig.speechSynthesisVoiceName = voice;
     speechConfig.speechSynthesisOutputFormat = sdk.SpeechSynthesisOutputFormat.Riff16Khz16BitMonoPcm;
 
     const speechSynthesizer = new sdk.SpeechSynthesizer(speechConfig);
@@ -43,13 +47,12 @@ app.get("/api/tts", async (req, res) => {
     const words = text.trim().split(/\s+/);
     const ssmlWords = words
       .map((w) => {
-        // Strip punctuation for the bookmark mark so it matches analyzeText() keys
         const mark = w.toLowerCase().replace(/[^a-z0-9'-]/g, "");
         return `<bookmark mark="${mark}"/>${w}`;
       })
       .join(" ");
     const ssml = `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="en-US">
-  <voice name="id-ID-ArdiNeural">${ssmlWords}</voice>
+  <voice name="${voice}">${ssmlWords}</voice>
 </speak>`;
 
     const result = await new Promise((resolve, reject) => {

@@ -44,14 +44,21 @@ const formatVisemesDetailed = (visemes) => {
   });
 };
 
+export const VOICES = {
+  "id-ID": { name: "id-ID-ArdiNeural", label: "Indonesia", flag: "🇮🇩" },
+  "en-US": { name: "en-US-GuyNeural", label: "English", flag: "🇺🇸" },
+};
+
 export const useLipsyncStore = create((set, get) => ({
   // State
   loading: false,
   currentMessage: null, // { text, visemes, audioPlayer, audioBlob, audioUrl }
   lastOutput: null, // Menyimpan output terakhir untuk download
+  language: "id-ID", // active language key
 
   // Actions
   setLoading: (loading) => set({ loading }),
+  setLanguage: (language) => set({ language }),
 
   // Speak text using Azure TTS
   speak: async (text) => {
@@ -60,8 +67,11 @@ export const useLipsyncStore = create((set, get) => ({
     set({ loading: true });
     const startedAt = performance.now();
 
+    const { language } = get();
+    const voice = VOICES[language]?.name ?? VOICES["id-ID"].name;
+
     try {
-      const response = await fetch(`/api/tts?text=${encodeURIComponent(text)}`);
+      const response = await fetch(`/api/tts?text=${encodeURIComponent(text)}&voice=${encodeURIComponent(voice)}`);
 
       if (!response.ok) {
         throw new Error("TTS request failed");
