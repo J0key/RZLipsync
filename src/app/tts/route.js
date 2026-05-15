@@ -8,6 +8,7 @@ export async function GET(req) {
   );
 
   const voice = req.nextUrl.searchParams.get("voice") || "id-ID-ArdiNeural";
+  console.log("[TTS] voice param received:", voice);
   speechConfig.speechSynthesisVoiceName = voice;
 
   const speechSynthesizer = new sdk.SpeechSynthesizer(speechConfig);
