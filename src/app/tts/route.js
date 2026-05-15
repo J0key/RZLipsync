@@ -7,7 +7,8 @@ export async function GET(req) {
     process.env["SPEECH_REGION"]
   );
 
-  speechConfig.speechSynthesisVoiceName = `id-ID-ArdiNeural`;
+  const voice = req.nextUrl.searchParams.get("voice") || "id-ID-ArdiNeural";
+  speechConfig.speechSynthesisVoiceName = voice;
 
   const speechSynthesizer = new sdk.SpeechSynthesizer(speechConfig);
 
