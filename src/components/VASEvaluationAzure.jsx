@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLipsyncStore } from "../store/useLipsyncStore";
-import { analyzeText, AZURE_VISEMES } from "../data/azurePhonemeVisemeMap";
+import { analyzeText, AZURE_VISEMES, WORD_PHONEME_VISEME } from "../data/azurePhonemeVisemeMap";
 
 export const VASEvaluationAzure = ({ onBack }) => {
   const { lastOutput } = useLipsyncStore();
@@ -47,6 +47,25 @@ export const VASEvaluationAzure = ({ onBack }) => {
       wordWindows[key].push({ startMs: offsetMs, endMs: nextOffsetMs });
     }
 
+    // Tambahkan windows untuk frasa multi-kata (misal "i love this game")
+    // dengan meng-span dari startMs kata pertama sampai endMs kata terakhir
+    const phraseKeys = Object.keys(WORD_PHONEME_VISEME).filter((k) => k.includes(" "));
+    for (const phrase of phraseKeys) {
+      const words = phrase.split(" ");
+      // Cari semua posisi berurutan di wordBoundaries yang cocok dengan frasa ini
+      for (let i = 0; i <= wordBoundaries.length - words.length; i++) {
+        const slice = wordBoundaries.slice(i, i + words.length);
+        const matches = slice.every((wb, idx) => wb.word.toLowerCase() === words[idx]);
+        if (matches) {
+          const startMs = slice[0].offsetMs;
+          const afterLastIdx = i + words.length;
+          const endMs = wordBoundaries[afterLastIdx]?.offsetMs ?? null;
+          if (!wordWindows[phrase]) wordWindows[phrase] = [];
+          wordWindows[phrase].push({ startMs, endMs });
+        }
+      }
+    }
+
     // Tracker: berapa kali suatu kata sudah di-pakai (untuk duplikat)
     const wordUsageCount = {};
 
@@ -69,6 +88,7 @@ export const VASEvaluationAzure = ({ onBack }) => {
           detectedLabel: "-",
           isMatch: false,
           notInDict: true,
+          source: exp.source,
         });
         i++;
         continue;
@@ -133,6 +153,7 @@ export const VASEvaluationAzure = ({ onBack }) => {
           isMatch,
           notInDict: false,
           noWindow: !window,
+          source: e.source,
         });
       }
 
@@ -277,6 +298,9 @@ export const VASEvaluationAzure = ({ onBack }) => {
                         <td className="py-2 px-3 text-gray-500 text-xs">{row.index}</td>
                         <td className="py-2 px-3">
                           <span className="text-white font-medium">{row.word}</span>
+                          {row.source === "cmu" && (
+                            <span className="ml-1 text-[10px] bg-blue-500/30 text-blue-300 rounded px-1 align-middle">CMU</span>
+                          )}
                           <span className="text-blue-300 font-mono text-xs ml-2">{row.syllable ?? row.phoneme}</span>
                           <span className="text-gray-500 font-mono text-xs ml-1">({row.phoneme})</span>
                         </td>
@@ -310,6 +334,7 @@ export const VASEvaluationAzure = ({ onBack }) => {
                 <span><span className="text-red-400 mr-1">✗</span>Mismatch</span>
                 <span><span className="text-yellow-400 mr-1">?</span>Kata tidak ada di dictionary</span>
                 <span><span className="text-gray-400 mr-1">-</span>Tidak ada detected viseme</span>
+                <span><span className="bg-blue-500/30 text-blue-300 rounded px-1 mr-1">CMU</span>Fonem dari CMU Pronouncing Dict</span>
               </div>
             </div>
           </>
