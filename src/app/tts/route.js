@@ -15,12 +15,7 @@ export async function GET(req) {
 
   const visemes = [];
   speechSynthesizer.visemeReceived = function (s, e) {
-    console.log(
-      "(Viseme), Audio offset: " +
-        e.audioOffset / 10000 +
-        "ms. Viseme ID: " +
-        e.visemeId
-    );
+    console.log("[Viseme event full]", JSON.stringify(e, null, 2));
     visemes.push([e.audioOffset / 10000, e.visemeId]);
   };
   const audioStream = await new Promise((resolve, reject) => {

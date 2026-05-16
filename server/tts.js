@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import * as sdk from "microsoft-cognitiveservices-speech-sdk";
 import dotenv from "dotenv";
+import { spawn } from "child_process";
 
 dotenv.config({ path: ".env.local" });
 
@@ -88,6 +89,43 @@ app.get("/api/tts", async (req, res) => {
   }
 });
 
+
+app.get("/api/phonemize", async (req, res) => {
+  const text = (req.query.text || "").trim();
+  const lang = req.query.lang === "en" ? "en-us" : "id";
+
+  if (!text) return res.json([]);
+
+  const words = text.toLowerCase().split(/\s+/);
+
+  try {
+    const ipaRaw = await runPhonemizer(text, lang);
+    const ipaSegments = ipaRaw.trim().split(/\s+/);
+    const result = words.map((word, i) => ({ word, ipa: ipaSegments[i] ?? null }));
+    res.json(result);
+  } catch (err) {
+    console.error("[Phonemize] Error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+function runPhonemizer(text, lang) {
+  return new Promise((resolve, reject) => {
+    const py = spawn("python", [
+      "-c",
+      `import sys; from phonemizer import phonemize; sys.stdout.reconfigure(encoding='utf-8'); print(phonemize(sys.argv[1], language='${lang}', backend='espeak', strip=True, with_stress=False))`,
+      text,
+    ], { env: { ...process.env, PYTHONIOENCODING: "utf-8" } });
+
+    let out = "", err = "";
+    py.stdout.on("data", (d) => (out += d.toString()));
+    py.stderr.on("data", (d) => (err += d.toString()));
+    py.on("close", (code) => {
+      if (code !== 0) reject(new Error(err || "Python error"));
+      else resolve(out);
+    });
+  });
+}
 
 app.listen(PORT, () => {
   console.log(`TTS Server running on http://localhost:${PORT}`);
