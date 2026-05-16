@@ -3,15 +3,25 @@ import cors from "cors";
 import * as sdk from "microsoft-cognitiveservices-speech-sdk";
 import dotenv from "dotenv";
 import { spawn } from "child_process";
+import path from "path";
+import { fileURLToPath } from "url";
 
 dotenv.config({ path: ".env.local" });
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(cors());
 
-const PORT = 3002;
+const PORT = process.env.PORT || 3002;
+const isProd = process.env.NODE_ENV === "production";
 
 const ALLOWED_VOICES = new Set(["id-ID-ArdiNeural", "en-US-GuyNeural"]);
+
+app.get("/api/health", (req, res) => {
+  res.json({ status: "ok" });
+});
 
 app.get("/api/tts", async (req, res) => {
   const text = req.query.text;
@@ -127,6 +137,15 @@ function runPhonemizer(text, lang) {
   });
 }
 
+// Serve React build in production
+if (isProd) {
+  const distPath = path.join(__dirname, "../dist");
+  app.use(express.static(distPath));
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(distPath, "index.html"));
+  });
+}
+
 app.listen(PORT, () => {
-  console.log(`TTS Server running on http://localhost:${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
