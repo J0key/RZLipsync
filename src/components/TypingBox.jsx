@@ -31,10 +31,10 @@ export const TypingBox = () => {
   };
 
   return (
-    <div className="bg-white/15 backdrop-blur-xl rounded-2xl p-4 sm:p-6 w-full max-w-[500px] shadow-lg border border-white/20">
+    <div className="bg-white/15 backdrop-blur-xl rounded-2xl p-4 sm:p-6 w-full shadow-lg border border-white/20">
       <div className="flex flex-col items-center justify-between mb-3">
         <div className="text-gray-800 text-xl font-semibold mb-3">
-          Azure Text-to-Speech
+          Azure 
         </div>
         {/* Language toggle */}
         <div className="flex gap-1.5">

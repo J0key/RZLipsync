@@ -60,7 +60,7 @@ function App() {
 
         </div>
 
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-10 flex justify-center">
+        <div className="fixed bottom-8 left-0 right-0 z-10 flex justify-center px-4">
           <TypingBox />
         </div>
         {!avatarReady && <LoadingScreen />}
