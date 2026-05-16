@@ -3,18 +3,20 @@ import { analyzeText, AZURE_VISEMES } from "../data/azurePhonemeVisemeMap";
 import { useLipsyncStore } from "../store/useLipsyncStore";
 
 export const VASEvaluationAzure = ({ onBack }) => {
-  const { lastOutput } = useLipsyncStore();
+  const { lastOutput, language } = useLipsyncStore();
   const [analysisResult, setAnalysisResult] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const scriptText = lastOutput?.text ?? "";
+  // language di store: "id-ID" atau "en-US" → ubah ke "id" atau "en"
+  const lang = language?.startsWith("id") ? "id" : "en";
 
   const handleAnalyze = async () => {
     if (!scriptText.trim()) return;
     setLoading(true);
     setAnalysisResult(null);
 
-    const phonemes = await analyzeText(scriptText);
+    const phonemes = await analyzeText(scriptText, lang);
 
     const rows = phonemes.map((p, idx) => ({
       index: idx + 1,
@@ -66,7 +68,7 @@ export const VASEvaluationAzure = ({ onBack }) => {
             ? <p className="text-white/80 text-sm bg-black/20 rounded-xl py-3 px-4">{scriptText}</p>
             : <p className="text-yellow-400/70 text-xs">Belum ada teks. Generate lipsync di halaman Avatar dulu.</p>
           }
-          <div className="flex gap-3 mt-3">
+          <div className="flex items-center gap-3 mt-3">
             <button
               onClick={handleAnalyze}
               disabled={!scriptText.trim() || loading}
@@ -78,6 +80,9 @@ export const VASEvaluationAzure = ({ onBack }) => {
             >
               {loading ? "Analyzing..." : "Analyze VAS"}
             </button>
+            <span className="text-xs text-gray-400">
+              Language: <span className="text-white font-medium">{lang === "id" ? "🇮🇩 Indonesia" : "🇺🇸 English"}</span>
+            </span>
           </div>
         </div>
 
@@ -88,7 +93,7 @@ export const VASEvaluationAzure = ({ onBack }) => {
             <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 mb-6 border border-white/20">
               <h2 className="text-white text-lg font-semibold mb-4">VAS Score</h2>
               <div className="flex items-center gap-6">
-                <div className="text-center min-w-[110px]">
+                <div className="text-center min-w-27.5">
                   <div className={`text-5xl font-bold ${scoreColor(analysisResult.vasScore)}`}>
                     {analysisResult.vasScore.toFixed(1)}%
                   </div>

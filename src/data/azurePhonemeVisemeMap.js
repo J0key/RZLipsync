@@ -25,8 +25,7 @@ export const AZURE_VISEMES = {
   21: { id: 21, short: "v21", morphTarget: "viseme_21",  description: "p, b, m" },
 };
 
-// Di-generate dari AZURE_VISEMES.description: IPA fonem → viseme ID
-// Contoh: "æ" → 1, "ə" → 1, "s" → 15, "tʃ" → 16, dst.
+// IPA fonem English → viseme ID (di-generate dari AZURE_VISEMES.description)
 export const IPA_TO_VISEME = (() => {
   const map = {};
   for (const [id, v] of Object.entries(AZURE_VISEMES)) {
@@ -38,6 +37,50 @@ export const IPA_TO_VISEME = (() => {
   }
   return map;
 })();
+
+// IPA fonem Bahasa Indonesia (espeak backend 'id') → viseme Azure terdekat
+export const IPA_ID_TO_VISEME = {
+  // Vokal
+  "a":  2,   // → ɑ (mulut terbuka lebar)
+  "i":  6,   // → i
+  "u":  7,   // → u
+  "e":  4,   // → ɛ
+  "o":  8,   // → o
+  "ə":  1,   // → schwa
+  "ɛ":  4,   // → ɛ
+  "ɔ":  3,   // → ɔ
+  // Bilabial
+  "p":  21,
+  "b":  21,
+  "m":  21,
+  // Alveolar
+  "t":  19,
+  "d":  19,
+  "n":  19,
+  "l":  14,
+  "s":  15,
+  "z":  15,
+  "r":  13,  // flap/trill → paling dekat ɹ
+  // Palatal
+  "j":  6,
+  "tʃ": 16,
+  "dʒ": 16,
+  "ɲ":  19,  // ny → paling dekat n
+  // Velar
+  "k":  20,
+  "g":  20,
+  "ŋ":  20,  // ng
+  // Labiodental
+  "f":  18,
+  "v":  18,
+  // Glottal
+  "h":  12,
+  "ʔ":  0,   // glottal stop → silence
+  // Semi-vokal
+  "w":  7,
+  // Frikatif palatal
+  "ʃ":  16,
+};
 
 /**
  * Tokenize string IPA per-fonem (greedy, diphone dulu).
@@ -75,13 +118,15 @@ export async function fetchIPAForText(text, lang = "id") {
 }
 
 /**
- * Analisis teks: user input → espeak IPA → cek tiap fonem ada di IPA_TO_VISEME (Azure).
+ * Analisis teks: user input → espeak IPA → cek tiap fonem ada di mapping Azure.
+ * lang: "en" untuk English (IPA_TO_VISEME), "id" untuk Indonesia (IPA_ID_TO_VISEME)
  * Returns: [{ word, phoneme, visemeId, inAzure }]
- *   - inAzure: true jika fonem dikenal Azure, false jika tidak
  */
 export async function analyzeText(text, lang = "en") {
   const normalized = text.toLowerCase().trim();
   if (!normalized) return [];
+
+  const visemeMapping = lang === "id" ? IPA_ID_TO_VISEME : IPA_TO_VISEME;
 
   let wordIPAs;
   try {
@@ -100,7 +145,7 @@ export async function analyzeText(text, lang = "en") {
     }
     const phonemes = tokenizeIPA(ipa);
     for (const ph of phonemes) {
-      const visemeId = IPA_TO_VISEME[ph] ?? null;
+      const visemeId = visemeMapping[ph] ?? null;
       result.push({ word, phoneme: ph, visemeId, inAzure: visemeId !== null });
     }
   }
