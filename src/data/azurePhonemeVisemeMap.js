@@ -143,7 +143,9 @@ export async function analyzeText(text, lang = "en") {
       result.push({ word, phoneme: "?", visemeId: null, inAzure: false });
       continue;
     }
-    const phonemes = tokenizeIPA(ipa);
+    // server returns space-separated phones per word (e.g. "s k uː l")
+    const phones = ipa.trim().split(/\s+/).filter(Boolean);
+    const phonemes = phones.length > 1 ? phones : tokenizeIPA(ipa);
     for (const ph of phonemes) {
       const visemeId = visemeMapping[ph] ?? null;
       result.push({ word, phoneme: ph, visemeId, inAzure: visemeId !== null });

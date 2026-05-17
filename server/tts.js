@@ -109,9 +109,8 @@ app.get("/api/phonemize", async (req, res) => {
   const words = text.toLowerCase().split(/\s+/);
 
   try {
-    const ipaRaw = await runPhonemizer(text, lang);
-    const ipaSegments = ipaRaw.trim().split(/\s+/);
-    const result = words.map((word, i) => ({ word, ipa: ipaSegments[i] ?? null }));
+    const ipaSegments = JSON.parse(await runPhonemizer(text, lang));
+    const result = words.map((word, i) => ({ word, ipa: ipaSegments[i]?.trim() || null }));
     res.json(result);
   } catch (err) {
     console.error("[Phonemize] Error:", err.message);
@@ -121,11 +120,18 @@ app.get("/api/phonemize", async (req, res) => {
 
 function runPhonemizer(text, lang) {
   return new Promise((resolve, reject) => {
-    const py = spawn("python", [
-      "-c",
-      `import sys; from phonemizer import phonemize; sys.stdout.reconfigure(encoding='utf-8'); print(phonemize(sys.argv[1], language='${lang}', backend='espeak', strip=True, with_stress=False))`,
-      text,
-    ], { env: { ...process.env, PYTHONIOENCODING: "utf-8" } });
+    const script = [
+      "import sys, json",
+      "from phonemizer import phonemize",
+      "from phonemizer.separator import Separator",
+      "sys.stdout.reconfigure(encoding='utf-8')",
+      `result = phonemize(sys.argv[1], language='${lang}', backend='espeak', separator=Separator(word='|', phone=' ', syllable=''), strip=True, with_stress=False)`,
+      "print(json.dumps(result.split('|')))",
+    ].join("; ");
+
+    const py = spawn("python", ["-c", script, text], {
+      env: { ...process.env, PYTHONIOENCODING: "utf-8" },
+    });
 
     let out = "", err = "";
     py.stdout.on("data", (d) => (out += d.toString()));
