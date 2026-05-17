@@ -35,6 +35,15 @@ export const IPA_TO_VISEME = (() => {
       map[ph] = Number(id);
     }
   }
+  // espeak variants not listed in Azure description
+  map["eɪ"] = 4;   // → ɛ
+  map["oʊ"] = 8;   // → o
+  map["uː"] = 7;   // → u
+  map["iː"] = 6;   // → i
+  map["ɑː"] = 2;   // → ɑ
+  map["ɔː"] = 3;   // → ɔ
+  map["ɜː"] = 5;   // → ɝ
+  map["ɹ"]  = 13;  // → ɹ (espeak uses ɹ not r)
   return map;
 })();
 
