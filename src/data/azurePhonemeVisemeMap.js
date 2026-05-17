@@ -47,48 +47,51 @@ export const IPA_TO_VISEME = (() => {
   return map;
 })();
 
-// IPA fonem Bahasa Indonesia (espeak backend 'id') → viseme Azure terdekat
+// IPA fonem Bahasa Indonesia (id-ID) → viseme ID
+// Source: https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-ssml-phonetic-sets
 export const IPA_ID_TO_VISEME = {
   // Vokal
-  "a":  2,   // → ɑ (mulut terbuka lebar)
-  "i":  6,   // → i
-  "u":  7,   // → u
-  "e":  4,   // → ɛ
-  "o":  8,   // → o
-  "ə":  1,   // → schwa
-  "ɛ":  4,   // → ɛ
-  "ɔ":  3,   // → ɔ
-  // Bilabial
-  "p":  21,
-  "b":  21,
-  "m":  21,
-  // Alveolar
-  "t":  19,
-  "d":  19,
-  "n":  19,
-  "l":  14,
-  "s":  15,
-  "z":  15,
-  "r":  13,  // flap/trill → paling dekat ɹ
-  // Palatal
-  "j":  6,
-  "tʃ": 16,
-  "dʒ": 16,
-  "ɲ":  19,  // ny → paling dekat n
-  // Velar
-  "k":  20,
-  "g":  20,
-  "ŋ":  20,  // ng
-  // Labiodental
-  "f":  18,
-  "v":  18,
-  // Glottal
-  "h":  12,
-  "ʔ":  0,   // glottal stop → silence
-  // Semi-vokal
-  "w":  7,
-  // Frikatif palatal
-  "ʃ":  16,
+  "ə":   1,
+  "a":   2,
+  "a͡i":  [2, 6],
+  "a͡ʊ":  [2, 4],
+  "e":   4,
+  "ɛ":   4,
+  "ɪ":   6,
+  "i":   6,
+  "ɔ":   3,
+  "o":   8,
+  "ɔ͡i":  [3, 6],
+  "u":   7,
+  "ʊ":   4,
+  // Konsonan
+  "ʔ":   19,
+  "b":   21,
+  "d":   19,
+  "d͡ʒ":  [19, 16],
+  "f":   18,
+  "g":   20,
+  "h":   12,
+  "ɲ":   19,
+  "j":   6,
+  "k":   20,
+  "l":   14,
+  "m":   21,
+  "n":   19,
+  "ŋ":   20,
+  "p":   21,
+  "r":   13,
+  "s":   15,
+  "ʃ":   16,
+  "t":   19,
+  "t͡ʃ":  [19, 16],
+  "w":   7,
+  "x":   12,
+  "z":   15,
+  // espeak variants
+  "v":   18,
+  "dʒ":  16,
+  "tʃ":  16,
 };
 
 /**
@@ -156,7 +159,8 @@ export async function analyzeText(text, lang = "en") {
     const phones = ipa.trim().split(/\s+/).filter(Boolean);
     const phonemes = phones.length > 1 ? phones : tokenizeIPA(ipa);
     for (const ph of phonemes) {
-      const visemeId = visemeMapping[ph] ?? null;
+      const visemeVal = visemeMapping[ph] ?? null;
+      const visemeId = Array.isArray(visemeVal) ? visemeVal[0] : visemeVal;
       result.push({ word, phoneme: ph, visemeId, inAzure: visemeId !== null });
     }
   }
