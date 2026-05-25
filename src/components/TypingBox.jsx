@@ -33,9 +33,7 @@ export const TypingBox = () => {
   return (
     <div className="bg-white/15 max-w-xl backdrop-blur-xl rounded-2xl p-4 sm:p-6 w-full shadow-lg border border-white/20">
       <div className="flex flex-col items-center justify-between mb-3">
-        <div className="text-gray-800 text-xl font-semibold mb-3">
-          Azure 
-        </div>
+        <div className="text-gray-800 text-xl font-semibold mb-3">Azure</div>
         {/* Language toggle */}
         <div className="flex gap-1.5">
           {Object.entries(VOICES).map(([key, voice]) => (
@@ -74,6 +72,28 @@ export const TypingBox = () => {
             }}
             disabled={currentMessage !== null}
           />
+          {lastOutput?.text && !currentMessage && (
+            <button
+              title="Muat kembali teks sebelumnya"
+              onClick={() => setText(lastOutput.text)}
+              className="bg-white/20 hover:bg-white/40 rounded-full p-2.5 text-white transition-all shrink-0"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-4 h-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
+              </svg>
+            </button>
+          )}
           {currentMessage ? (
             <button
               className="bg-red-500/80 hover:bg-red-500 rounded-full py-3 px-7 text-white text-sm font-medium cursor-pointer transition-all w-full sm:w-auto shrink-0"
